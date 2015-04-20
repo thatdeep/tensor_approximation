@@ -23,7 +23,7 @@ small_decomposition_test()
 # Function approximation part
 
 x = np.random.random() * 100
-print x
+print x, inner_function(x)
 
-arr = np.array([inner_function(x) for i in range(1000)])
-sns.distplot(arr)
+#arr = np.array([inner_function(1.0*i + 0.19) for i in range(1000)], dtype=np.float64)
+#print arr

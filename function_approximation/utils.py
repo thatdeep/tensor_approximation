@@ -15,11 +15,11 @@ def x_pow_decomposition(x, gamma_pow):
     sbit, wbits, pbits = b[:1], b[1:1 + nexp], b[1 + nexp:]
     tail_exp = wbits.uint - (1<<(nexp - 1)) + 1
     assert tail_exp < 0
-    print len(pbits.bin), tail_exp, gamma_pow
+    #print len(pbits.bin), tail_exp, gamma_pow
     bin_repr = '0'*(-tail_exp * gamma_pow) + '1' + pbits.bin
-    print len(bin_repr)
+    #print len(bin_repr)
     bin_repr += '0'*(gamma_pow - len(bin_repr) % gamma_pow)
-    print len(bin_repr)
+   # print len(bin_repr)
     assert len(bin_repr) % gamma_pow == 0
     compressed = [int(bin_repr[i:i+gamma_pow], 2) for i in range(0, len(bin_repr), gamma_pow)]
     compressed[0] = head
