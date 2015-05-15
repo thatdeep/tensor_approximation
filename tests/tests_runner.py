@@ -26,11 +26,11 @@ small_decomposition_test()
 func = InnerFunction(N=2)
 
 X = np.linspace(0.0, 1.0, 500, endpoint=False)
-#cProfile.run("np.array([float(func.evaluate(x)) for x in X])")
-Y = np.array([float(func.evaluate(x)) for x in X])
+cProfile.run("np.array([float(func.evaluate(x)) for x in X])")
+#Y = np.array([float(func.evaluate(x)) for x in X])
 
-sns.plt.plot(X, Y, '.')
-sns.plt.show()
+#sns.plt.plot(X, Y, '.')
+#sns.plt.show()
 
 #x = np.linspace(0, 1.0, 5)
 #y = np.array([exact_inner_function(i) for i in x], dtype=np.float64)

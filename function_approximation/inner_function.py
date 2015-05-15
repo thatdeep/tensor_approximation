@@ -53,7 +53,7 @@ class InnerFunctionMp:
             ps = [0]*max_k
             ms[0] = mpf(self.gamma)
             ps[0] = mpf(bits[0])
-            #print bits.size, len(self.betas), max_k
+            #bits = [mpf(elem) for elem in bits]
             for k in xrange(1, max_k):
                 ms[k] = self.gamma ** (self.betas[k+1] - self.betas[k]) * ((ms[k-1] - self.gamma) * rfunc[k] / 2 + 1)
                 ps[k] = int(simple_kron[k]) * (ms[k-1] + self.gamma - 2) / 2 + mpf(bits[k])*(1 - int(simple_kron[k]))
