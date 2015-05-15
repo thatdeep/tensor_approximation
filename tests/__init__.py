@@ -1,4 +1,4 @@
 __author__ = 'Const'
 
 from operations_test import simple_operation_test
-from arg_decomposition_test import uniformly_distributed_approximation_test, small_decomposition_test
+#from arg_decomposition_test import uniformly_distributed_approximation_test, small_decomposition_test

@@ -1,8 +1,6 @@
 import numpy as np
 
-from function_approximation import x_decomposition, x_restore
-
-
+"""
 def arg_approximation_delta(x):
     x = np.random.random() * 100
     sign, bits = x_decomposition(x)
@@ -20,3 +18,4 @@ def uniformly_distributed_approximation_test(size, bound):
 
 def small_decomposition_test(x_small=1e-500):
     assert arg_approximation_delta(x_small) == 0
+    """
