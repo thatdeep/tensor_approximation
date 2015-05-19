@@ -2,7 +2,7 @@ import numpy as np
 
 from numpy import tensordot
 
-class TensorTrain:
+class TensorTrain(object):
     def __init__(self, data=None, sizes=None, eps=1e-9):
         # From full array
         if isinstance(data, np.ndarray):

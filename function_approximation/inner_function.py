@@ -8,7 +8,30 @@ from mpmath import mpf, workdps
 from utils import decompose, rfunc_builder, power_2_bound
 
 
-class InnerFunctionMp:
+class InnerFunctionG(object):
+    def __init__(self, N=2, gamma=None, dps=2048):
+        with workdps(dps):
+            self.N = N
+            pow_2 = power_2_bound(2*N + 3)
+            if gamma:
+                self.gamma = max(power_2_bound(gamma), pow_2)
+            else:
+                self.gamma = pow_2
+            self.gamma_pow = int(math.log(self.gamma, 2))
+            self.gamma = mpf(self.gamma)
+            self.dps = dps
+            self.eps = mpf('1.0') / self.gamma - 1
+            self.algebraic = mp.power(mpf('2.0'), mpf('1.0') / mpf(N))
+            self.powers = [self.algebraic**i for i in xrange(1, self.N + 1)]
+
+            self.inner_function = InnerFunctionMp(N, gamma, dps)
+
+    def __call__(self, x, q):
+        return mp.fsum([self.powers[p] * self.inner_function(x[p] + self.eps * q) for p in xrange(self.N)])
+
+
+
+class InnerFunctionMp(object):
     def __init__(self, N=2, gamma=None, dps=2048):
         with workdps(dps):
             self.N = N
@@ -23,19 +46,21 @@ class InnerFunctionMp:
             self.betas = self.list_of_betas()
             self.max_precision = len(self.betas) - 2
 
-    def evaluate(self, x):
+    def __call__(self, x):
         with workdps(self.dps):
             bits = decompose(math.fabs(x), self.gamma_pow, self.max_precision)
             ps = self.representation(bits)
             gammas = [mpf(self.gamma)]*bits.size
             return np.sum([c * gamma **(-power) for (c, gamma, power) in zip(ps, gammas, self.betas[:bits.size])])
 
-    def list_of_betas(self):
-        with workdps(self.dps):
-            max_beta = int(self.dps * math.log(10, 2)) / self.gamma_pow
+    def list_of_betas(self, dps=None):
+        if not dps:
+            dps = self.dps
+        with workdps(dps):
+            max_beta = int(dps * math.log(10, 2)) / self.gamma_pow
             betas = [0, 1]
             constant = 2
-            for k in xrange(2, self.dps, 1):
+            for k in xrange(2, dps, 1):
                 new_bk = betas[-1] * self.N + constant + 1
                 if new_bk > max_beta:
                     #print betas[-1]
@@ -60,7 +85,7 @@ class InnerFunctionMp:
             return ps
 
 
-class InnerFunctionDecimal:
+class InnerFunctionDecimal(object):
     def __init__(self, N=2, gamma=None, dps=2048):
         self.N = N
         pow_2 = power_2_bound(2*N + 3)
@@ -75,7 +100,7 @@ class InnerFunctionDecimal:
         self.betas = self.list_of_betas()
         self.max_precision = len(self.betas) - 2
 
-    def evaluate(self, x):
+    def __call__(self, x):
         bits = decompose(math.fabs(x), self.gamma_pow, self.max_precision)
         ps = self.representation(bits)
         gammas = [dc.Decimal(self.gamma)]*bits.size

@@ -1,3 +1,3 @@
 __author__ = 'Const'
 
-from inner_function import InnerFunctionDecimal, InnerFunctionMp
+from inner_function import InnerFunctionDecimal, InnerFunctionMp, InnerFunctionG
