@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 import cProfile
 
-from function_approximation import InnerFunctionMp as InnerFunction, InnerFunctionG
+from function_approximation import InnerFunctionMpStrong as InnerFunction, InnerFunctionG
 #from tests import uniformly_distributed_approximation_test, small_decomposition_test, simple_operation_test
 
 # Run operation test
@@ -26,7 +26,7 @@ small_decomposition_test()
 """
 # Function approximation part
 
-func = InnerFunctionG(N=2)
+"""func = InnerFunctionG(N=2)
 
 x = np.linspace(0.0, 1.0, 50, endpoint=False)
 y = np.linspace(0.0, 1.0, 50, endpoint=False)
@@ -35,7 +35,7 @@ X ,Y  = np.meshgrid(x, y)
 
 points = np.vstack([X.ravel(), Y.ravel()]).T
 
-values = np.apply_along_axis(lambda p: float(func(p, 1)), 1, points)
+values = np.apply_along_axis(lambda p: float(func(p, 2)), 1, points)
 
 V = values.reshape(X.shape)
 
@@ -43,20 +43,25 @@ CS = plt.contourf(X, Y, V, cmap=plt.cm.bone, origin='lower')
 # Make a colorbar for the ContourSet returned by the contourf call.
 cbar = plt.colorbar(CS)
 cbar.ax.set_ylabel('value')
-plt.show()
+plt.show()"""
 
 
-"""func = InnerFunction(N=2)
+func = InnerFunction(N=2)
+
+print float(func(0.101))
+print float(func(0.102))
+print float(func(0.128))
+print float(func(0.129))
 
 X = np.linspace(0.0, 1.0, 5000, endpoint=False)
 #cProfile.run("np.array([float(func.evaluate(x)) for x in X])")
-Y = np.array([float(func.evaluate(x)) for x in X])
+Y = np.array([float(func(x)) for x in X])
 
 #print func.list_of_betas(dps=40000)
 
 sns.plt.plot(X, Y, '.')
 sns.plt.show()
-"""
+
 #x = np.linspace(0, 1.0, 5)
 #y = np.array([exact_inner_function(i) for i in x], dtype=np.float64)
 

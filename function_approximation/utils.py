@@ -13,6 +13,17 @@ def decompose(x, gamma_pow, precision=40):
     return compressed
 
 
+def strong_decompose(x, gamma, precision=40):
+    tail = x
+    compressed = np.zeros(precision + 1)
+    for i in xrange(precision + 1):
+        if tail == 0:
+            break
+        tail, compressed[i] = math.modf(tail)
+        tail = tail * gamma
+    return compressed
+
+
 def rfunc_builder(gamma, compressed):
     return np.logical_or(compressed == (gamma - 1), compressed == (gamma - 2))
 

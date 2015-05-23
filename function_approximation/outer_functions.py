@@ -2,6 +2,8 @@ import math
 import numpy as np
 import mpmath as mp
 
+from mpmath import mpf, workdps
+
 """def dot_sequence(indices, gamma, eps, k_max=15):
     N = indices.size
     q_size = 2*N
@@ -18,46 +20,47 @@ import mpmath as mp
 
 
 class Outer(object):
-    def __init__(self, f, k, N=2):
+    def __init__(self, f, k, N=2, dps=2048):
         self.f = f
         self.k = k
-
+        self.dps=dps
 
     def __call__(self, x):
         pass
 
-    def index_search(x, gamma, k, N=2):
-        def q_estimate_from_many(ns):
-            mins = [-1]*len(ns)
-            maxs = [2*N + 1]*len(ns)
-            for i, n in enumerate(ns):
-                if n == gamma - 2:
-                    mins[i] = 0
-                    maxs[i] = 0
-                    continue
-                if gamma - 3 - n >= 0:
-                    mins[i] = gamma - 3 - n
-                if gamma - 2 - n < 2*N:
-                    maxs[i] = gamma - 1 - n
+    def index_search(self, x, gamma, k, N=2):
+        with workdps(self.dps):
+            def q_estimate_from_many(ns):
+                mins = [-1]*len(ns)
+                maxs = [2*N + 1]*len(ns)
+                for i, n in enumerate(ns):
+                    if n == gamma - 2:
+                        mins[i] = 0
+                        maxs[i] = 0
+                        continue
+                    if gamma - 3 - n >= 0:
+                        mins[i] = gamma - 3 - n
+                    if gamma - 2 - n < 2*N:
+                        maxs[i] = gamma - 1 - n
 
-            print [el >= 0 for el in mins]
-            if all([el >= 0 for el in mins]):
-                return 0
+                print [el >= 0 for el in mins]
+                if all([el >= 0 for el in mins]):
+                    return 0
 
-            if all([el < 2*N + 1 for el in maxs]):
-                return max(maxs)
-            print ns
-            print mins
-            print maxs
-            raise Exception('wrong way of counting q')
+                if all([el < 2*N + 1 for el in maxs]):
+                    return max(maxs)
+                print ns
+                print mins
+                print maxs
+                raise Exception('wrong way of counting q')
 
-        x_big = [mpf(el) * gamma**k for el in x]
-        eps = mpf('1') / (gamma - 1)
-        intervals = mp.linspace(mpf('0'), mpf('1'), gamma)
+            x_big = [mpf(el) * gamma**k for el in x]
+            eps = mpf('1') / (gamma - 1)
+            intervals = mp.linspace(mpf('0'), mpf('1'), gamma)
 
-        x_big_frac = [mp.frac(el) for el in x_big]
-        numbers_of_intervals = [mp.floor(el / eps) for el in x_big_frac]
+            x_big_frac = [mp.frac(el) for el in x_big]
+            numbers_of_intervals = [mp.floor(el / eps) for el in x_big_frac]
 
-        q = q_estimate_from_many(numbers_of_intervals)
+            q = q_estimate_from_many(numbers_of_intervals)
 
-        return [int(mp.floor(el - eps*q*gamma**k)) for el in x_big], q
+            return [int(mp.floor(el - eps*q*gamma**k)) for el in x_big], q

@@ -1,5 +1,9 @@
 import numpy as np
 
+x = np.linspace(0.0, 1.0, 500)
+
+
+
 """
 def arg_approximation_delta(x):
     x = np.random.random() * 100
