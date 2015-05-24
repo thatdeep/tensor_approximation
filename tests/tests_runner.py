@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import mpmath as mp
 from mpmath import workdps, mpf
@@ -7,11 +8,60 @@ from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 import cProfile
 
+from function_approximation import Combinator
 from function_approximation import InnerFunctionMp as InnerFunction, InnerFunctionG
 #from tests import uniformly_distributed_approximation_test, small_decomposition_test, simple_operation_test
-from tests import simple_kseq_test
 
-simple_kseq_test(2/mp.e, 0.6, N=2)
+def ethalon_function(x):
+    return (math.exp(-x[0]**2)*x[0]**2 + math.exp(-x[1]**2)*x[1]**2)
+
+norm = 2.0 / math.e
+L = 0.6
+
+combinator = Combinator(ethalon_function, norm, L, N=2)
+
+M = 15
+x = np.linspace(0.0, 1.0, M, endpoint=False)
+y = np.linspace(0.0, 1.0, M, endpoint=False)
+
+X, Y = np.meshgrid(x, y)
+
+points_raw = np.vstack([X.ravel(), Y.ravel()]).T
+print points_raw.shape
+values_raw = np.apply_along_axis(ethalon_function, 1, points_raw)
+comb_values_raw = [combinator(point) for point in points_raw]
+print values_raw
+print comb_values_raw
+V = values_raw.reshape(X.shape)
+CV = np.array(comb_values_raw, dtype=np.float)
+
+# Twice as wide as it is tall.
+fig = plt.figure(figsize=plt.figaspect(0.5))
+
+#---- First subplot
+ax = fig.add_subplot(1, 2, 1, projection='3d')
+surf = ax.plot_surface(X, Y, V, rstride=1, cstride=1, cmap=cm.coolwarm,
+        linewidth=0, antialiased=False)
+ax.set_zlim3d(V.min(), V.max())
+
+fig.colorbar(surf, shrink=0.5, aspect=10)
+
+#---- Second subplot
+ax = fig.add_subplot(1, 2, 2, projection='3d')
+
+surf = ax.plot_surface(X, Y, CV.reshape(X.shape), rstride=1, cstride=1, cmap=cm.coolwarm,
+        linewidth=0, antialiased=False)
+
+fig.colorbar(surf, shrink=0.5, aspect=10)
+
+ax.set_zlim3d(CV.min(), CV.max())
+
+plt.show()
+
+#CS = plt.contourf(X, Y, V, cmap=plt.cm.bone, origin='lower')
+# Make a colorbar for the ContourSet returned by the contourf call.
+#cbar = plt.colorbar(CS)
+#cbar.ax.set_ylabel('value')
 
 # Run operation test
 """

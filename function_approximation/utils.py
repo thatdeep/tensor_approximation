@@ -45,4 +45,4 @@ def power_2_bound(v):
 
 
 def gamma_estimate(N):
-    return mp.mpf(power_2_bound(2*N + 3))
+    return power_2_bound(2*N + 3)

@@ -7,16 +7,16 @@ from mpmath import workdps, mpf
 
 
 class KseqEstimator(object):
-    def __init__(self, norm, L, N=2, dps=2048):
+    def __init__(self, norm, L, N=2, dps=2048*4):
         with workdps(dps):
             self.L = L
             self.N = 2
-            self.gamma = gamma_estimate(N)
+            self.gamma = mpf(gamma_estimate(N))
             self.m = mpf(self.N)
             self.norm = norm
             self.dps = dps
             self.eps_coeff = (self.gamma - 3) / (self.gamma - 1)
-            self.sconst = (mpf('0.5')*(self.gamma - 3) / (self.gamma - 1))**(mp.ln(2) / mp.ln(self.gamma))
+            self.sconst = (mpf('5')*(self.gamma - 3) / (self.gamma - 1))**(mp.ln(2) / mp.ln(self.gamma))
 
     def nth(self, n):
         with workdps(self.dps):
@@ -30,7 +30,7 @@ class KseqEstimator(object):
     # find_minimum_k
     def find_minimum_k(self, k_last=None):
         with workdps(self.dps):
-            print 'last_k:', k_last
+            #print 'last_k:', k_last
             # delta func
             delta_f = lambda k: (self.gamma - 2) / (self.gamma - 1) * self.gamma**(-k)
 
@@ -62,18 +62,19 @@ class KseqEstimator(object):
         with workdps(self.dps):
             k_next = self.find_minimum_k(k_last)
             valid = k_next
-            if k_last != None and mp.log(self.gamma, 2) * self.nth(k_last) > self.dps * mp.log(mpf('10'), mpf('2')):
-                return mp.log(self.gamma, 2) * self.nth(k_last), -1
+            #if k_last != None and mp.log(self.gamma, 2) * self.nth(k_last) > self.dps * mp.log(mpf('10'), mpf('2')):
+            #    return mp.log(self.gamma, 2) * self.nth(k_last), -1
             i = 1
             while True:
                 modulo = self.epsilon(k_next) * self.L
                 if inequality(modulo, k_next):
                     k_returned = self.search_optimal_k(inequality, valid, k_next)
                     return self.epsilon(k_returned) * self.L, k_returned
+                #print 'k_reached:', k_next
                 k_next *= 2**i
                 i += 1
 
-    def k_finder(self, amount_of_k=4):
+    def estimate_kseq(self, amount_of_k=3):
         beta_map = {}
         max_size = amount_of_k + 1
         with workdps(self.dps):
@@ -124,18 +125,18 @@ class KseqEstimator(object):
                 inequality = lambda modulo, k: (modulo + sum(partial_sums) / (2**(k))) <= second_part
                 b_next, k_next = self.find_optimal_k(inequality, k_last=kseq[-1])
                 if k_next == -1:
-                    print 'reach power of', b_next
-                    return kseq, bseq, a_nr, c_nj
+                    #print 'reach power of', b_next
+                    return kseq, bseq
                 kseq.append(k_next)
                 bseq.append(b_next)
                 beta_map[k_next + 1] = self.nth(k_next + 1)
-                print b_next, k_next
+                #print b_next, k_next
 
                 for r in xrange(1, t):
                     a_nr[t][r] /= 2**(k_next)
                 for j in xrange(t - 1, -1, -1):
                     c_nj[t][j] = sum([a_nr[t][k] * c_nj[k-1][j] for k in xrange(j+1, t + 1)])
-            return kseq, bseq, a_nr, c_nj
+            return kseq, bseq
 
     # def nth_generator(self):
     #     with workdps(self.dps):
