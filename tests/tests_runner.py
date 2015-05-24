@@ -1,12 +1,17 @@
 import numpy as np
+import mpmath as mp
+from mpmath import workdps, mpf
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 import cProfile
 
-from function_approximation import InnerFunctionMpStrong as InnerFunction, InnerFunctionG
+from function_approximation import InnerFunctionMp as InnerFunction, InnerFunctionG
 #from tests import uniformly_distributed_approximation_test, small_decomposition_test, simple_operation_test
+from tests import simple_kseq_test
+
+simple_kseq_test(2/mp.e, 0.6, N=2)
 
 # Run operation test
 """
@@ -46,21 +51,26 @@ cbar.ax.set_ylabel('value')
 plt.show()"""
 
 
-func = InnerFunction(N=2)
+"""func = InnerFunction(N=4)
 
 print float(func(0.101))
 print float(func(0.102))
 print float(func(0.128))
 print float(func(0.129))
 
-X = np.linspace(0.0, 1.0, 5000, endpoint=False)
-#cProfile.run("np.array([float(func.evaluate(x)) for x in X])")
-Y = np.array([float(func(x)) for x in X])
+with workdps(2048):
+    point = mpf('0.59349056')
+    eps = mpf('2.0')**(-10)
+    #X = mp.linspace(mpf('0.5934905'), mpf('0.5934907'), 2000, endpoint=False)
+    X = mp.linspace(point - eps, point + eps, 2000, endpoint=False)
+    #cProfile.run("np.array([float(func.evaluate(x)) for x in X])")
+    Y = np.array([float(func(x)) for x in X])
+    print func(X[0]), func(X[-1]), func(point)
 
-#print func.list_of_betas(dps=40000)
+    #print func.list_of_betas(dps=40000)
 
-sns.plt.plot(X, Y, '.')
-sns.plt.show()
+    sns.plt.plot(X, Y, '.')
+    sns.plt.show()"""
 
 #x = np.linspace(0, 1.0, 5)
 #y = np.array([exact_inner_function(i) for i in x], dtype=np.float64)

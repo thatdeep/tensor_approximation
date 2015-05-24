@@ -1,16 +1,18 @@
 import math
 import numpy as np
+import mpmath as mp
 
 
 def decompose(x, gamma_pow, precision=40):
-    tail = x
-    compressed = np.zeros(precision + 1)
-    for i in xrange(precision + 1):
-        if tail == 0:
-            break
-        tail, compressed[i] = math.modf(tail)
-        tail = math.ldexp(tail, gamma_pow)
-    return compressed
+    with mp.workdps(2048):
+        tail = x
+        compressed = np.zeros(precision + 1)
+        for i in xrange(precision + 1):
+            if tail == 0:
+                break
+            tail, compressed[i] = mp.frac(tail), mp.floor(tail)
+            tail = mp.ldexp(tail, gamma_pow)
+        return compressed
 
 
 def strong_decompose(x, gamma, precision=40):
@@ -40,3 +42,7 @@ def power_2_bound(v):
     v |= v >> 8
     v |= v >> 16
     return v + 1
+
+
+def gamma_estimate(N):
+    return mp.mpf(power_2_bound(2*N + 3))

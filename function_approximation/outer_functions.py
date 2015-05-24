@@ -4,6 +4,13 @@ import mpmath as mp
 
 from mpmath import mpf, workdps
 
+
+
+
+def cnst(gamma, k):
+    print 'gamma: {gamma}, k: {k}'.format(gamma=gamma, k=k)
+    return 2**k * (mpf('0.5')*(gamma - 3) / (gamma - 1) * gamma**(-k))**(mp.ln(2) / mp.ln(gamma))
+
 """def dot_sequence(indices, gamma, eps, k_max=15):
     N = indices.size
     q_size = 2*N
