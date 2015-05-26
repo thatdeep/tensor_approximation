@@ -12,15 +12,15 @@ from function_approximation import Combinator
 from function_approximation import InnerFunctionMp as InnerFunction, InnerFunctionG
 #from tests import uniformly_distributed_approximation_test, small_decomposition_test, simple_operation_test
 
-def ethalon_function(x):
-    return (math.exp(-x[0]**2)*x[0]**2 + math.exp(-x[1]**2)*x[1]**2)
+def ethalon_function(x, C=3):
+    return (math.exp(-(C*x[0])**2)*(C*x[0])**2 + math.exp(-(C*x[1])**2)*(C*x[1])**2)
 
 norm = 2.0 / math.e
 L = 0.6
 
 combinator = Combinator(ethalon_function, norm, L, N=2)
 
-M = 15
+M = 2
 x = np.linspace(0.0, 1.0, M, endpoint=False)
 y = np.linspace(0.0, 1.0, M, endpoint=False)
 
@@ -29,11 +29,15 @@ X, Y = np.meshgrid(x, y)
 points_raw = np.vstack([X.ravel(), Y.ravel()]).T
 print points_raw.shape
 values_raw = np.apply_along_axis(ethalon_function, 1, points_raw)
+cProfile.run('[combinator(point) for point in points_raw]')
 comb_values_raw = [combinator(point) for point in points_raw]
 print values_raw
 print comb_values_raw
 V = values_raw.reshape(X.shape)
-CV = np.array(comb_values_raw, dtype=np.float)
+CV = np.array(comb_values_raw, dtype=np.float).reshape(X.shape)
+
+print np.linalg.norm(CV - V)
+print np.max(np.abs(CV - V))
 
 # Twice as wide as it is tall.
 fig = plt.figure(figsize=plt.figaspect(0.5))
@@ -49,7 +53,7 @@ fig.colorbar(surf, shrink=0.5, aspect=10)
 #---- Second subplot
 ax = fig.add_subplot(1, 2, 2, projection='3d')
 
-surf = ax.plot_surface(X, Y, CV.reshape(X.shape), rstride=1, cstride=1, cmap=cm.coolwarm,
+surf = ax.plot_surface(X, Y, CV, rstride=1, cstride=1, cmap=cm.coolwarm,
         linewidth=0, antialiased=False)
 
 fig.colorbar(surf, shrink=0.5, aspect=10)

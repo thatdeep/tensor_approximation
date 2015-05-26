@@ -88,8 +88,9 @@ class Outer(object):
             self.k = k
             self.dps = dps
             self.N = N
-            self.gamma = gamma_estimate(N)
+            self.gamma = mpf(gamma_estimate(N))
             self.cube_dispatcher = CubeDispatcher(k, N, dps)
+            self.mul_const = self.gamma**(-self.k)
 
     def __call__(self, x):
         with workdps(self.dps):
@@ -110,17 +111,20 @@ class Outer(object):
             mlt = [[m] if type(m) != list else m for m in multipliers]
             shp = [len(i) for i in ind]
             f_value = mpf('0.0')
+            #mul_const = self.gamma**(-self.k)
+            m = np.prod(shp)
             for i in np.ndindex(*shp):
-                point = [ind[s][i[s]] * self.gamma**(-self.k) - eps*q + eps * self.gamma**(-self.k) for s in xrange(self.N)]
+                point = [(ind[s][i[s]] + eps) * self.mul_const - eps*q for s in xrange(self.N)]
                 #print point
                 f_value += mpf(self.f(point)) * np.prod([mlt[s][i[s]] for s in xrange(self.N)]) / (self.N + 1)
-            f_value /= np.prod(shp)
+            f_value /= m
             return f_value
 
     def exact_on_cube(self, index, q):
         with workdps(self.dps):
             eps = mpf('1.0') / (self.gamma - 1)
-            point = [index[s] * self.gamma**(-self.k) - eps * q + eps * self.gamma**(-self.k) for s in xrange(self.N)]
+            #mul_const = self.gamma**(-self.k)
+            point = [(index[s] + eps) * self.mul_const - eps * q for s in xrange(self.N)]
             return mpf(self.f(point)) / (self.N + 1)
 
 
@@ -158,7 +162,8 @@ class Combinator(object):
             self.f_norm = f_norm
             self.L = L
             kseq_estimator = KseqEstimator(f_norm, L, N, dps)
-            kseq, norms = kseq_estimator.estimate_kseq(amount_of_k=2)
+            kseq, norms = kseq_estimator.estimate_kseq(amount_of_k=3)
+            print kseq
             #kseq.append(mpf('200'))
             #kseq.append(mpf('2000'))
             all_combinations = [(list(combinations(kseq, i)), (-1)**(i+1)) for i in xrange(1, len(kseq) + 1)]

@@ -9,6 +9,7 @@ from mpmath import workdps, mpf
 class KseqEstimator(object):
     def __init__(self, norm, L, N=2, dps=2048*4):
         with workdps(dps):
+            param = mpf('1.0')
             self.L = L
             self.N = 2
             self.gamma = mpf(gamma_estimate(N))
@@ -16,7 +17,7 @@ class KseqEstimator(object):
             self.norm = norm
             self.dps = dps
             self.eps_coeff = (self.gamma - 3) / (self.gamma - 1)
-            self.sconst = (mpf('5')*(self.gamma - 3) / (self.gamma - 1))**(mp.ln(2) / mp.ln(self.gamma))
+            self.sconst = (param * mpf('0.5')*(self.gamma - 3) / (self.gamma - 1))**(mp.ln(2) / mp.ln(self.gamma))
 
     def nth(self, n):
         with workdps(self.dps):
