@@ -5,7 +5,8 @@ from utils import frobenius_norm, rank_chop
 from numpy import reshape, dot
 from numpy.linalg.linalg import svd
 
-#blya ebanoe govno
+
+# TODO make norm redistribution
 def tt_svd(tt, A, eps=1e-9):
     d = len(A.shape)
     tt.n = A.shape

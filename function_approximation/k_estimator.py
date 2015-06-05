@@ -7,7 +7,7 @@ from mpmath import workdps, mpf
 
 
 class KseqEstimator(object):
-    def __init__(self, norm, L, N=2, dps=2048*4):
+    def __init__(self, norm, L, N=2, dps=2048*4, initial_k=1):
         with workdps(dps):
             param = mpf('1.0')
             self.L = L
@@ -18,6 +18,7 @@ class KseqEstimator(object):
             self.dps = dps
             self.eps_coeff = (self.gamma - 3) / (self.gamma - 1)
             self.sconst = (param * mpf('0.5')*(self.gamma - 3) / (self.gamma - 1))**(mp.ln(2) / mp.ln(self.gamma))
+            self.initial_k = initial_k
 
     def nth(self, n):
         with workdps(self.dps):
@@ -34,11 +35,13 @@ class KseqEstimator(object):
             #print 'last_k:', k_last
             # delta func
             delta_f = lambda k: (self.gamma - 2) / (self.gamma - 1) * self.gamma**(-k)
+            #delta_f = lambda k: (self.gamma - 2) * self.gamma**(-self.nth(k + 1))
 
             if k_last == None:
-                return mpf('1')
+                return mpf(self.initial_k)
             assert k_last > 0
             c_bound = self.sconst
+            # TODO Ek definition is different!!!
             #print 'maxmax:', mp.ceil(-mp.log(delta_f(k_last)/c_bound, 2)), k_last + 1
             return max(mp.ceil(-mp.log(delta_f(k_last)/c_bound, 2)), k_last + 1)
 

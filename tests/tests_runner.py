@@ -1,5 +1,8 @@
 import math
 import numpy as np
+
+from tensor_train import maxvol
+from tests import maxvol_test
 import mpmath as mp
 from mpmath import workdps, mpf
 import matplotlib.pyplot as plt
@@ -8,29 +11,71 @@ from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 import cProfile
 
-from function_approximation import Combinator
+from tests import approx_test
+from function_approximation import Combinator, Composer
 from function_approximation import InnerFunctionMp as InnerFunction, InnerFunctionG
 #from tests import uniformly_distributed_approximation_test, small_decomposition_test, simple_operation_test
 
-def ethalon_function(x, C=3):
-    return (math.exp(-(C*x[0])**2)*(C*x[0])**2 + math.exp(-(C*x[1])**2)*(C*x[1])**2)
+#def ethalon_function(x, C=3):
+#    return (math.exp(-(C*x[0])**2)*(C*x[0])**2 + math.exp(-(C*x[1])**2)*(C*x[1])**2)
 
-norm = 2.0 / math.e
-L = 0.6
+#norm = 2.0 / math.e
+#L = 0.6
 
-combinator = Combinator(ethalon_function, norm, L, N=2)
+"""
+def ethalon_function(x):
+    return math.sin(x[0] + x[1])/2
 
-M = 2
+norm = 0.5
+L = math.sqrt(2.0)/2
+
+combinator = Composer(ethalon_function, norm, L, N=2, initial_k=10)
+
+M = 10
 x = np.linspace(0.0, 1.0, M, endpoint=False)
 y = np.linspace(0.0, 1.0, M, endpoint=False)
 
 X, Y = np.meshgrid(x, y)
 
 points_raw = np.vstack([X.ravel(), Y.ravel()]).T
+values_raw = np.apply_along_axis(ethalon_function, 1, points_raw)
+V = values_raw.reshape(X.shape)
+
+for k in xrange(1, 10):
+    combinator = Composer(ethalon_function, norm, L, N=2, initial_k=k)
+    comb_values_raw = [combinator(point) for point in points_raw]
+    CV = np.array(comb_values_raw, dtype=np.float).reshape(X.shape)
+    print ('{k}\t{max_err}\t{err_norm}\n'+'*'*80).format(k=k, max_err=np.max(np.abs(V - CV)), err_norm=np.linalg.norm(V - CV))
+"""
+
+"""
+def ethalon_function(x):
+    return math.sin(x[0] + x[1])/2
+
+norm = 0.5
+L = math.sqrt(2.0)/2
+
+combinator = Composer(ethalon_function, norm, L, N=2, initial_k=1)
+
+M = 10
+x = np.linspace(0.0, 1.0, M, endpoint=False)
+y = np.linspace(0.0, 1.0, M, endpoint=False)
+
+X, Y = np.meshgrid(x, y)
+
+#cProfile.run('combinator([0.5, 0.5])')
+
+points_raw = np.vstack([X.ravel(), Y.ravel()]).T
 print points_raw.shape
 values_raw = np.apply_along_axis(ethalon_function, 1, points_raw)
-cProfile.run('[combinator(point) for point in points_raw]')
-comb_values_raw = [combinator(point) for point in points_raw]
+#cProfile.run('[combinator(point) for point in points_raw]')
+#comb_values_raw = [combinator(point) for point in points_raw]
+cvrs = []
+for kk in xrange(1, 4):
+    combinator = Composer(ethalon_function, norm, L, N=2, initial_k=1, amount_of_k=kk)
+    cvrs.append([combinator(point) for point in points_raw])
+cvrss = np.array(cvrs, dtype=np.float)
+comb_values_raw = np.average(cvrss, axis=0)
 print values_raw
 print comb_values_raw
 V = values_raw.reshape(X.shape)
@@ -61,6 +106,7 @@ fig.colorbar(surf, shrink=0.5, aspect=10)
 ax.set_zlim3d(CV.min(), CV.max())
 
 plt.show()
+"""
 
 #CS = plt.contourf(X, Y, V, cmap=plt.cm.bone, origin='lower')
 # Make a colorbar for the ContourSet returned by the contourf call.
@@ -98,14 +144,31 @@ values = np.apply_along_axis(lambda p: float(func(p, 2)), 1, points)
 
 V = values.reshape(X.shape)
 
-CS = plt.contourf(X, Y, V, cmap=plt.cm.bone, origin='lower')
-# Make a colorbar for the ContourSet returned by the contourf call.
-cbar = plt.colorbar(CS)
-cbar.ax.set_ylabel('value')
+fig = plt.figure()
+
+#---- First subplot
+ax = fig.add_subplot(1, 1, 1, projection='3d')
+surf = ax.plot_surface(X, Y, V, rstride=1, cstride=1, cmap=cm.coolwarm,
+        linewidth=0, antialiased=False)
+ax.set_zlim3d(V.min(), V.max())
 plt.show()"""
 
+#CS = plt.contourf(X, Y, V, cmap=plt.cm.bone, origin='lower')
+# Make a colorbar for the ContourSet returned by the contourf call.
+#cbar = plt.colorbar(CS)
+#cbar.ax.set_ylabel('value')
+#plt.show()
 
-"""func = InnerFunction(N=4)
+"""
+func = InnerFunction(N=4)
+
+
+print float(func(mpf('0.5898437499999999')))
+print float(func(mpf('0.59')))"""
+
+
+
+"""
 
 print float(func(0.101))
 print float(func(0.102))
@@ -140,3 +203,33 @@ with workdps(2048):
 #arr = np.array([exact_inner_function(x) for x in np.random.random(100)], dtype=np.float64)
 #sns.distplot(arr, bins=250)
 #sns.plt.show()
+
+"""
+A = np.random.random((10, 4))
+A = np.array([
+    [0.602657, 0.287517, 0.179929, 0.060979],
+    [0.508685, 0.163114, 0.676342, 0.093480],
+    [0.288947, 0.668028, 0.055647, 0.181749],
+    [0.141189, 0.251369, 0.682098, 0.323910],
+    [0.947997, 0.588853, 0.308936, 0.589636],
+    [0.243959, 0.893497, 0.613157, 0.225322],
+    [0.934003, 0.301660, 0.725291, 0.536643],
+    [0.934360, 0.295389, 0.485394, 0.829019],
+    [0.631194, 0.492146, 0.607109, 0.388354],
+    [0.808554, 0.767534, 0.315304, 0.391934]])
+dets, d = maxvol_test(A)
+print dets
+print d
+"""
+
+"""
+A = np.random.random((10, 4))
+print A
+approx_test(A, 3)
+"""
+
+from tensor_train import TensorTrain, tt_qr
+
+A = np.random.random((10, 8, 4, 5))
+t = TensorTrain(A)
+tt_qr(t, 'rl')

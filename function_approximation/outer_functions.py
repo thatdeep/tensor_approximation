@@ -56,6 +56,7 @@ class CubeDispatcher(object):
             for i in xrange(len(x_big)):
                 if not ineq[i]:
                     indices[i] = [indices[i], indices[i] + 1]
+                    #multipliers[i] = [mpf('0.5'), mpf('0.5')]
                     multipliers[i] = [(indices[i][0] + eps - (x_big[i] + mod_val))/eps, (x_big[i] + mod_val - indices[i][0])/eps]
 
             # Now we have indices, where indices[i] may be number, or a pair of numbers (if x[i] lay between intervals)
@@ -81,6 +82,36 @@ def cnst(gamma, k):
     return dots"""
 
 
+class OuterFree(object):
+    def __init__(self, k, N=2, dps=2048):
+        with workdps(dps):
+            self.k = k
+            self.dps = dps
+            self.N = N
+            self.gamma = mpf(gamma_estimate(N))
+            self.cube_dispatcher = CubeDispatcher(k, N, dps)
+            self.mul_const = self.gamma**(-self.k)
+            self.eps = mpf('1.0') / (self.gamma - 1)
+            real_dps = math.log(self.gamma, 10)*k
+            if 4*real_dps > dps:
+                self.dps = max(4*real_dps, dps)
+
+    def __call__(self, f, x):
+        with workdps(self.dps):
+            pass
+            #qs_mask = qs_estimate(self, x)
+
+    def qs_estimate(self, x):
+        x_big = [mpf(el) * self.gamma**self.k for el in x]
+        x_big_frac = [mp.frac(el) for el in x_big]
+        numbers_of_intervals = [mp.floor(el / self.eps) for el in x_big_frac]
+        qs_mask = np.ones(2 * self.N + 1, dtype=np.bool)
+        for n in numbers_of_intervals:
+            if n != self.gamma - 2 and n >= self.gamma - 2 - 2*self.N:
+                qs_mask[self.gamma - 2 - n] = False
+        return qs_mask
+
+
 class Outer(object):
     def __init__(self, f, k, N=2, dps=2048):
         with workdps(dps):
@@ -89,8 +120,16 @@ class Outer(object):
             self.dps = dps
             self.N = N
             self.gamma = mpf(gamma_estimate(N))
-            self.cube_dispatcher = CubeDispatcher(k, N, dps)
+            if math.log(10, self.gamma) * k > dps:
+                self.dps = math.log(10, self.gamma) * k * 3
+            self.cube_dispatcher = CubeDispatcher(k, N, self.dps)
             self.mul_const = self.gamma**(-self.k)
+            self.eps = mpf('1.0') / (self.gamma - 1)
+            real_dps = math.log(self.gamma, 10)*k
+            if 4*real_dps > dps:
+                self.dps = max(4*real_dps, dps)
+            eps_mul_const = self.eps * self.mul_const
+            #self.all_eps_adders = [eps_mul_const - q * self.eps for q in xrange(2 * N + 1)]
 
     def __call__(self, x):
         with workdps(self.dps):
@@ -112,21 +151,79 @@ class Outer(object):
             shp = [len(i) for i in ind]
             f_value = mpf('0.0')
             #mul_const = self.gamma**(-self.k)
-            m = np.prod(shp)
+            m = int(np.prod(shp))
             for i in np.ndindex(*shp):
                 point = [(ind[s][i[s]] + eps) * self.mul_const - eps*q for s in xrange(self.N)]
                 #print point
-                f_value += mpf(self.f(point)) * np.prod([mlt[s][i[s]] for s in xrange(self.N)]) / (self.N + 1)
-            f_value /= m
+                f_value += mpf(self.f(point)) * np.prod([mlt[s][i[s]] for s in xrange(self.N)])
+            f_value /= (self.N + 1)
             return f_value
 
     def exact_on_cube(self, index, q):
         with workdps(self.dps):
+            indices = [int(i) for i in index]
             eps = mpf('1.0') / (self.gamma - 1)
             #mul_const = self.gamma**(-self.k)
-            point = [(index[s] + eps) * self.mul_const - eps * q for s in xrange(self.N)]
+            point = [(index[s] + eps) * self.mul_const - q * eps for s in xrange(self.N)]
+            #point = [indices[s]*self.mul_const + self.all_eps_adders[q] for s in xrange(self.N)]
             return mpf(self.f(point)) / (self.N + 1)
 
+
+class SemiOuter(object):
+    def __init__(self, f, k, N=2, dps=2048):
+        with workdps(dps):
+            self.f = f
+            self.k = k
+            self.dps = dps
+            self.N = N
+            self.gamma = mpf(gamma_estimate(N))
+            if math.log(10, self.gamma) * k > dps:
+                self.dps = math.log(10, self.gamma) * k * 3
+            self.cube_dispatcher = CubeDispatcher(k, N, self.dps)
+            self.mul_const = self.gamma**(-self.k)
+            self.eps = mpf('1.0') / (self.gamma - 1)
+            real_dps = math.log(self.gamma, 10)*k
+            if 4*real_dps > dps:
+                self.dps = max(4*real_dps, dps)
+            eps_mul_const = self.eps * self.mul_const
+            #self.all_eps_adders = [eps_mul_const - q * self.eps for q in xrange(2 * N + 1)]
+
+    def __call__(self, x):
+        with workdps(self.dps):
+            indices, qs_mask = self.cube_dispatcher.index_search(x)
+            q_forbidden = np.where(qs_mask == False)[0]
+            sum_for_q = mpf('0.0')
+            for i, q in indices:
+                sum_for_q += self.exact_on_cube(i, q)
+            for q in q_forbidden:
+                idx, mlt = self.cube_dispatcher.forbidden_index_search(x, q)
+                sum_for_q += self.average_between_cubes(idx, mlt, q)
+            return self.f(x) - sum_for_q
+
+    def average_between_cubes(self, indices, multipliers, q):
+        with workdps(self.dps):
+            eps = mpf('1.0') / (self.gamma - 1)
+            ind = [[i] if type(i) != list else i for i in indices]
+            mlt = [[m] if type(m) != list else m for m in multipliers]
+            shp = [len(i) for i in ind]
+            f_value = mpf('0.0')
+            #mul_const = self.gamma**(-self.k)
+            m = int(np.prod(shp))
+            for i in np.ndindex(*shp):
+                point = [(ind[s][i[s]] + eps) * self.mul_const - eps*q for s in xrange(self.N)]
+                #print point
+                f_value += mpf(self.f(point)) * np.prod([mlt[s][i[s]] for s in xrange(self.N)])
+            f_value /= (self.N + 1)
+            return f_value
+
+    def exact_on_cube(self, index, q):
+        with workdps(self.dps):
+            indices = [int(i) for i in index]
+            eps = mpf('1.0') / (self.gamma - 1)
+            #mul_const = self.gamma**(-self.k)
+            point = [(index[s] + eps) * self.mul_const - q * eps for s in xrange(self.N)]
+            #point = [indices[s]*self.mul_const + self.all_eps_adders[q] for s in xrange(self.N)]
+            return mpf(self.f(point)) / (self.N + 1)
 
 """class Combinator(object):
     def __init__(self, f_ethalon, f_norm, L, N=2, dps=2048*4):
@@ -154,19 +251,37 @@ class Outer(object):
         return current_outer"""
 
 
-class Combinator(object):
-    def __init__(self, f_ethalon, f_norm, L, N=2, dps=2048*4):
+class Composer(object):
+    def __init__(self, f_ethalon, f_norm, L, N=2, dps=2048*4, initial_k=1, amount_of_k=1):
         with workdps(dps):
             self.f = f_ethalon
             self.N = N
             self.f_norm = f_norm
             self.L = L
-            kseq_estimator = KseqEstimator(f_norm, L, N, dps)
-            kseq, norms = kseq_estimator.estimate_kseq(amount_of_k=3)
-            print kseq
+            kseq_estimator = KseqEstimator(f_norm, L, N, dps, initial_k=initial_k)
+            self.kseq, self.norms = kseq_estimator.estimate_kseq(amount_of_k=amount_of_k)
+            print self.kseq
+            self.next_semi_outer = SemiOuter(f_ethalon, k=self.kseq[0], N=N, dps=dps)
+            for k in xrange(1, len(self.kseq)):
+                self.next_semi_outer = SemiOuter(self.next_semi_outer, k=self.kseq[k], N=N, dps=dps)
+
+    def __call__(self, x):
+        return self.f(x) - self.next_semi_outer(x)
+
+class Combinator(object):
+    def __init__(self, f_ethalon, f_norm, L, N=2, dps=2048*4, initial_k=1):
+        with workdps(dps):
+            self.f = f_ethalon
+            self.N = N
+            self.f_norm = f_norm
+            self.L = L
+            kseq_estimator = KseqEstimator(f_norm, L, N, dps, initial_k=initial_k)
+            self.kseq, self.norms = kseq_estimator.estimate_kseq(amount_of_k=1)
+            print self.kseq
             #kseq.append(mpf('200'))
-            #kseq.append(mpf('2000'))
-            all_combinations = [(list(combinations(kseq, i)), (-1)**(i+1)) for i in xrange(1, len(kseq) + 1)]
+            #self.kseq.append(mpf('2000'))
+            all_combinations = [(list(combinations(self.kseq, i)), (-1)**(i+1)) for i in xrange(1, len(self.kseq) + 1)]
+
             self.compositions = []
             self.signs = []
             for combos, sign in all_combinations:
@@ -175,11 +290,31 @@ class Combinator(object):
                     self.signs.append(sign)
 
     def __call__(self, x):
+        #all_combinations = [list(combinations(range(0, len(self.kseq)), i)) for i in xrange(1, len(self.kseq) + 1)]
+
+        #res_by_levels = [[] for _ in len(self.kseq)]
+        #res_by_levels[0] = [Outer(self.f, self.kseq[i], self.N)(x) for i in xrange(len(self.kseq))]
+        #for level in xrange(1, len(self.kseq)):
+        #    combos = all_combinations[level]
+        #    res_by_levels[level] = [-1*(Outer(self.f))]
+
         #print 'next call'
         return sum([composition(x) * sign for (composition, sign) in zip(self.compositions, self.signs)])
+
 
     def compose(self, f, kseq):
         current_outer = f
         for k in reversed(kseq):
             current_outer = Outer(current_outer, k, self.N)
         return current_outer
+
+
+class ProximaNetwork(object):
+    def __init__(self, f_ethalon, f_norm, L, N=2, dps=2048*4):
+        self.f = f_ethalon
+        self.N = N
+        self.f_norm = f_norm
+        self.L = L
+        kseq_estimator = KseqEstimator(f_norm, L, N, dps)
+        self.kseq, self.norms = kseq_estimator.estimate_kseq(amount_of_k=3)
+        print self.kseq

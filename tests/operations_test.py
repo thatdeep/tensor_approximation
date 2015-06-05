@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import random as rnd
-from tt.utils import frobenius_norm
-from tt.core import TensorTrain
+from tensor_train.utils import frobenius_norm
+from tensor_train.core import TensorTrain
 
 
 def simple_operation_test(operation='add', percent=0.95, ndims=4, avg_dimsize=5, variate_dims=False, eps=1e-16):
@@ -40,7 +40,6 @@ def simple_operation_test(operation='add', percent=0.95, ndims=4, avg_dimsize=5,
     print '\ntensor A:'
     print t_a.printable_basic_info()
     print "difference in frob. norm from it's original form:", frobenius_norm(t_a_full - A)
-    print 'ya govnokoder'
 
     print '\ntensor B:'
     print t_b.printable_basic_info()

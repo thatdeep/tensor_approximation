@@ -20,7 +20,7 @@ class InnerFunctionG(object):
             self.gamma_pow = int(math.log(self.gamma, 2))
             self.gamma = mpf(self.gamma)
             self.dps = dps
-            self.eps = mpf('1.0') / self.gamma - 1
+            self.eps = mpf('1.0') / (self.gamma - 1)
             self.algebraic = mp.power(mpf('0.5') / mpf(N), mpf('1.0') / mpf(N))
             self.powers = [self.algebraic**i for i in xrange(1, self.N + 1)]
 

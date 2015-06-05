@@ -1,6 +1,6 @@
 import numpy as np
-from tt.core import TensorTrain
-from tt.utils import frobenius_norm
+from tensor_train.core import TensorTrain
+from tensor_train.utils import frobenius_norm
 
 
 percent = 0.98
