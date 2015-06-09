@@ -17,23 +17,21 @@ def low_rank_matrix_approx(A, r, delta=1e-6):
     approx_prev = np.zeros_like(A)
 
     while True:
-        for i in xrange(m):
-            R = A[:, J]
-            Q, T = qr(R)
-            assert Q.shape == (m, r)
-            I = maxvol(Q)
-            for j in xrange(n):
-                C = A[I, :].T
-                assert C.shape == (n, r)
-                Q, T = qr(C)
-                assert Q.shape == (n, r)
-                J = maxvol(Q)
-            QQ = Q[J, :]
-            # We need to store the same as A matrix
-            approx_next = np.dot(A[:, J], np.dot(Q, np.linalg.inv(QQ)).T)
-            if np.linalg.norm(approx_next - approx_prev) > delta * np.linalg.norm(approx_prev):
-                return I, J
-            approx_prev = approx_next
+        R = A[:, J]
+        Q, T = qr(R)
+        assert Q.shape == (m, r)
+        I = maxvol(Q)
+        C = A[I, :].T
+        assert C.shape == (n, r)
+        Q, T = qr(C)
+        assert Q.shape == (n, r)
+        J = maxvol(Q)
+        QQ = Q[J, :]
+        # We need to store the same as A matrix
+        approx_next = np.dot(A[:, J], np.dot(Q, np.linalg.inv(QQ)).T)
+        if np.linalg.norm(approx_next - approx_prev) > delta * np.linalg.norm(approx_prev):
+            return I, J
+        approx_prev = approx_next
 
 
 def tt_rand(n, d, r):
@@ -131,7 +129,7 @@ def low_rank(A, dims, r=None, eps=1e-9):
     core = y[0].reshape(core, (y_rank[0] * dims[0], y_rank[1]))
     return indices, rmatrices, y
 
-
+"""
 def subcore(F, dims, row_set, column_set, dir='make_rows', k=None):
     from itertools import product
 
@@ -163,6 +161,34 @@ def subcore(F, dims, row_set, column_set, dir='make_rows', k=None):
         core[i] = F(i)
     core = reshape(core, (left_dim, dims[k], right_dim))
     return core
+"""
+
+
+def subcore(A, rows_array, columns_array, k):
+    from itertools import chain
+    rows, columns = rows_array[k], columns_array[k]
+    m, n = len(rows), len(columns)
+
+    # prepare row indices
+    if k == 0:
+        I = ()
+    else:
+        rows_list_wide = np.repeat(rows, k*n)
+        I = np.unravel_index(rows_list_wide, A.shape[:k])
+
+    # then prepare column indices
+    if k == len(A.shape) - 1:
+        J = ()
+    else:
+        columns_list_wide = np.tile(columns, m*k)
+        J = np.unravel_index(columns_list_wide, A.shape[k+1:])
+
+    # and then prepare middle index
+    M = (np.tile(np.repeat(np.arange(k), n), m),)
+
+    # We want to index A like A[I, middle, J]
+    multi_index = tuple(chain(I, M, J))
+    return A[multi_index]
 
 
 def low_rank_approx(F, dims, r=None, delta=1e-6):
@@ -198,6 +224,68 @@ def low_rank_approx(F, dims, r=None, delta=1e-6):
         cores.append(np.dot(Q, inv(QQ)))
 
 
+def index_build(indices, sub_index, rank, k):
+    if k == 0:
+        indices.append(sub_index)
+        return
+    # unraveled indices for ranks[k] rows
+    index_prev = indices[-1]
 
-def skeleton_decomposition():
-    pass
+    # unravel our rn - index
+    rank_rows, mode_rows = np.unravel_index(sub_index)
+
+    new_rows = np.zeros((index_prev.size + 1, rank))
+    new_rows[:-2] = index_prev[:-1]
+    # fill out indices
+    new_rows[:-1, :], new_rows[-1] = index_prev[:, rank_rows], mode_rows
+    indices.append(new_rows)
+    return
+
+
+def skeleton_decomposition(A, ranks=None, eps=1e-9):
+    n = A.shape
+    d = len(n)
+    # if ranks is not specified, define them as (2, 2, ..., 2)
+    if ranks == None:
+        ranks = np.ones(d + 1) * 2
+        ranks[0] = ranks[-1] = 1
+
+    J = [np.arange(rk) for rk in ranks[1:-1]]
+    I = [[]]
+    cores = []
+    ind = np.zeros()
+
+    # Forward iteration - using set J of columns we build set I of rows with max volume
+    for k in xrange(0, d - 1):
+        C = subcore(A, I, J, k)
+        print C.shape
+
+        # if k == 0, then ranks[k] is J[0] columns count, and we have ranks[0] x n_1 x ranks[1] matrix
+        # otherwise C reshapes as (ranks[k] * n[k]) x ranks[k + 1] matrix
+        C = reshape(C, (ranks[k] * n[k], ranks[k+1]))
+
+        # compute QR of C, QQ - maxvol submatrix of Q, and then compute C_k as Q QQ^-1
+        Q, T = qr(C)
+        index_build(I, maxvol(Q), ranks[k], k)
+        I.append(maxvol(Q))
+        QQ = C[I, :]
+
+        # compute next core
+        cores.append(np.dot(Q, inv(QQ)).reshape((ranks[k], n[k], ranks[k+1])))
+    # And we have one core left
+    cores.append(subcore(A, I, J, d-1).reshape((ranks[-2], n[-1], ranks[-1])))
+
+
+    I2 = I
+    J2 = [[]]
+    cores2 = []
+
+    # Backward iteration - we use set I that we construct to recalculate set J
+    for k in xrange(d-1, 1):
+        C = subcore(A, I2, J2, k)
+        print C.shape
+
+        C = reshape(C, (ranks[k], (n[k] * ranks[k+1])))
+
+        Q, T = qr(C)
+        J.append(maxvol(Q))

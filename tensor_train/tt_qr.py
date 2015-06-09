@@ -14,14 +14,12 @@ def tt_qr(tt, op):
         # Perform right-to-left ortogonalization
         for k in xrange(d - 1, 0, -1):
             dims = cores[k].shape
-            first, second = dims[0], dims[1] * dims[2]
-            K = min(first, second)
-            next_core = reshape(cores[k], (first, second))
+            next_core = reshape(cores[k], (r[k], n[k] * r[k + 1]))
             cores[k], next_core = qr(next_core.T)
             cores[k] = cores[k].T
             next_core = next_core.T
             # Move dimension from right indices to left indices
-            cores[k] = reshape(cores[k], (cores[k].shape[0], n[k], cores[k].shape[1] / n[k]))
+            cores[k] = reshape(cores[k], (r[k], n[k], r[k + 1]))
             cores[k - 1] = tensordot(cores[k - 1], next_core, [len(cores[k - 1].shape) - 1, 0])
         if r[0] != 1:
             dims = cores[0].shape
