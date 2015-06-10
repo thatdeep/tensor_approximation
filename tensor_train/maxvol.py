@@ -11,23 +11,20 @@ def rmatdiv(B, A):
     z = np.linalg.lstsq(A.T, B.T)[0].T
     return z
 
-def maxvol(A, ind=None):
+def maxvol(A, max_iters=100, eps=5e-2):
     n, r = A.shape
     if n <= r:
         return np.array(xrange(n))
 
-    if ind == None:
-        perm, l_temp, u_temp = lu(A)
-        p = perm.T.nonzero()[1].copy()
-        ind = p[:r]
-        B = A[p, :]
-        submatrix = A[ind, :]
-        z = rmatdiv(B[r:, :], submatrix)
+    perm, _, _ = lu(A)
+    permutation_vector = perm.T.nonzero()[1].copy()
+    ind = permutation_vector[:r]
+    B = A[permutation_vector, :]
+    submatrix = A[ind, :]
+    z = rmatdiv(B[r:, :], submatrix)
 
-    all_iters = 100
-    eps = 5e-2
     iter = 0
-    while iter <= all_iters:
+    while iter <= max_iters:
         max_indices = np.argmax(abs(z), axis=1)
         max_values = abs(z)[range(z.shape[0]), max_indices]
         max_arg = np.argmax(max_values)
@@ -37,7 +34,8 @@ def maxvol(A, ind=None):
             return ind
         i_row = max_arg
         j_row = max_indices[i_row]
-        p[i_row + r], p[j_row] = p[j_row], p[i_row + r]
+        permutation_vector[i_row + r], permutation_vector[j_row] =  \
+                permutation_vector[j_row], permutation_vector[i_row + r]
         bb = z[:, j_row]
         bb[i_row] += 1
         cc = z[i_row, :]
@@ -45,6 +43,6 @@ def maxvol(A, ind=None):
         print z.shape, bb.shape, cc.shape
         z -= np.outer(bb, cc) / z[i_row, j_row]
         iter += 1
-        ind = p[:r]
+        ind = permutation_vector[:r]
         ind = np.sort(ind)
     return ind

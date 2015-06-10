@@ -164,33 +164,6 @@ def subcore(F, dims, row_set, column_set, dir='make_rows', k=None):
 """
 
 
-def subcore(A, rows_array, columns_array, k):
-    from itertools import chain
-    rows, columns = rows_array[k], columns_array[k]
-    m, n = len(rows), len(columns)
-
-    # prepare row indices
-    if k == 0:
-        I = ()
-    else:
-        rows_list_wide = np.repeat(rows, k*n)
-        I = np.unravel_index(rows_list_wide, A.shape[:k])
-
-    # then prepare column indices
-    if k == len(A.shape) - 1:
-        J = ()
-    else:
-        columns_list_wide = np.tile(columns, m*k)
-        J = np.unravel_index(columns_list_wide, A.shape[k+1:])
-
-    # and then prepare middle index
-    M = (np.tile(np.repeat(np.arange(k), n), m),)
-
-    # We want to index A like A[I, middle, J]
-    multi_index = tuple(chain(I, M, J))
-    return A[multi_index]
-
-
 def low_rank_approx(F, dims, r=None, delta=1e-6):
     if r == None:
         r = np.ones(len(dims) - 1)
@@ -201,6 +174,7 @@ def low_rank_approx(F, dims, r=None, delta=1e-6):
     raw_column_indices = [np.arange(r_el) for r_el in r]
     nested_column_index_sets = [np.unravel_index(raw_column_indices[j], dims[j:]) for j in xrange(len(dims) - 1)]
     J = [np.arange(rk) for rk in r]
+    J = []
     I = []
     cores = []
 
@@ -224,22 +198,110 @@ def low_rank_approx(F, dims, r=None, delta=1e-6):
         cores.append(np.dot(Q, inv(QQ)))
 
 
-def index_build(indices, sub_index, rank, k):
+def subcore(A, rows_array, columns_array, k):
+    from itertools import chain
+
+    if len(rows_array) == 0:
+        rows = []
+    if len(columns_array) == 0:
+        rows, columns = rows_array[k-1] if rows_array else np.array([]), columns_array[k] if columns_array else np.array([])
+    m, n = rows.shape[0] if rows.shape != (0,) else 1, columns.shape[0] if columns.shape != (0,) else 1
+    mid = A.shape[k]
+
+    # prepare row indices
     if k == 0:
+        I = ()
+    else:
+        I = np.repeat(rows, mid*n).reshape((rows.shape[0], -1))
+        #rows_list_wide = np.repeat(rows, k*n)
+        # = np.unravel_index(rows_list_wide, A.shape[:k])
+        I = tuple((i for i in I))
+
+    # then prepare column indices
+    if k == len(A.shape) - 1:
+        J = ()
+    else:
+        J = np.tile(columns, m*mid).reshape((columns.shape[0], -1))
+        J = tuple((j for j in J))
+        #columns_list_wide = np.tile(columns, m*k)
+        #J = np.unravel_index(columns_list_wide, A.shape[k+1:])
+
+    # and then prepare middle index
+    M = (np.tile(np.repeat(np.arange(mid), n), m),)
+
+    # We want to index A like A[I, middle, J]
+    multi_index = tuple(chain(I, M, J))
+    return A[multi_index]
+
+
+def index_build(indices, sub_index, rank, dim):
+    if not indices:
         indices.append(sub_index)
         return
     # unraveled indices for ranks[k] rows
     index_prev = indices[-1]
-
+    density = 1 if len(index_prev.shape) == 1 else index_prev.shape[0]
     # unravel our rn - index
-    rank_rows, mode_rows = np.unravel_index(sub_index)
+    rank_rows, mode_rows = np.unravel_index(sub_index, (rank, dim))
 
-    new_rows = np.zeros((index_prev.size + 1, rank))
-    new_rows[:-2] = index_prev[:-1]
+    new_rows = np.zeros((density + 1, rank), dtype=int)
+    #new_rows[:-2] = index_prev[:-1]
     # fill out indices
     new_rows[:-1, :], new_rows[-1] = index_prev[:, rank_rows], mode_rows
     indices.append(new_rows)
     return
+
+
+class IndexRC(object):
+    def __init__(self, n, ranks, initial_index=None):
+        self.n = n
+        self.d = len(n)
+        self.d = len(n)
+
+        if hasattr(ranks, "__len__"):
+            self.ranks = ranks
+        else:
+            self.ranks = np.ones(self.d, dtype=int)*ranks
+
+        if initial_index == None:
+            self.index = [0]*(self.d - 1)
+            nd = np.array(self.n)
+            steps = np.array(nd[:-1], dtype=int)
+            steps[nd[1:] < steps] = nd[1:][nd[1:] < steps]
+            steps /= ranks
+            assert not np.sum(steps == 0)
+
+            self.update_index(np.arange(0, ranks[0]*steps[0], step=steps[0], dtype=int), k=0)
+            for k in xrange(1, self.d-1, 1):
+                self.update_index(np.arange(0, ranks[k]*steps[k], step=steps[k], dtype=int), k)
+        else:
+            self.index = initial_index
+
+        print self.d - 1, len(self.index)
+        assert self.d - 1 == len(self.index), 'Mode number and size of initial index must be equal'
+
+
+    def update_index(self, sub_index, k, direction='lr'):
+        if direction == 'lr' or direction == 'LR':
+            if k == 0:
+                self.index[0] = sub_index
+                return
+            rank_rows, mode_rows = np.unravel_index(sub_index, (self.ranks[k - 1], self.n[k]))
+            if k == 1:
+                self.index[1] = np.vstack([self.index[0][rank_rows], mode_rows])
+                return
+            density = self.index[k - 1].shape[0]
+            self.index[k] = np.zeros((density + 1, self.ranks[k]), dtype=int)
+            self.index[k][:-1] = self.index[k - 1][:, rank_rows]
+            self.index[k][-1] = mode_rows
+        """if direction == 'rl' or direction == 'RL':
+            if k == self.d - 1:
+                self.index[-1] = sub_index
+                return
+            mode_columns, rank_columns = np.unravel_index(sub_index, (self.n[k], self.ranks[k]))
+            if k == self.d - 2:
+                self.index[k] = np.vstack()"""
+
 
 
 def skeleton_decomposition(A, ranks=None, eps=1e-9):
@@ -247,17 +309,20 @@ def skeleton_decomposition(A, ranks=None, eps=1e-9):
     d = len(n)
     # if ranks is not specified, define them as (2, 2, ..., 2)
     if ranks == None:
-        ranks = np.ones(d + 1) * 2
+        ranks = np.ones(d + 1, dtype=int) * 2
         ranks[0] = ranks[-1] = 1
 
-    J = [np.arange(rk) for rk in ranks[1:-1]]
-    I = [[]]
+    irc = IndexRC(n, ranks[1:-1])
+    indices = []
+    for k in xrange(d-1, 0, -1):
+        index_build(indices, np.arange(ranks[k], dtype=int), ranks[k], n[k])
+    Indices = indices[::-1]
     cores = []
-    ind = np.zeros()
+    #ind = np.zeros()
 
     # Forward iteration - using set J of columns we build set I of rows with max volume
     for k in xrange(0, d - 1):
-        C = subcore(A, I, J, k)
+        C = subcore(A, indices, k)
         print C.shape
 
         # if k == 0, then ranks[k] is J[0] columns count, and we have ranks[0] x n_1 x ranks[1] matrix
@@ -266,9 +331,9 @@ def skeleton_decomposition(A, ranks=None, eps=1e-9):
 
         # compute QR of C, QQ - maxvol submatrix of Q, and then compute C_k as Q QQ^-1
         Q, T = qr(C)
-        index_build(I, maxvol(Q), ranks[k], k)
-        I.append(maxvol(Q))
-        QQ = C[I, :]
+        rows = maxvol(Q)
+        index_build(I, rows, ranks[k], n[k])
+        QQ = C[rows, :]
 
         # compute next core
         cores.append(np.dot(Q, inv(QQ)).reshape((ranks[k], n[k], ranks[k+1])))
