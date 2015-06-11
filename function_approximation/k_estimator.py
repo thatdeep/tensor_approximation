@@ -141,17 +141,3 @@ class KseqEstimator(object):
                 for j in xrange(t - 1, -1, -1):
                     c_nj[t][j] = sum([a_nr[t][k] * c_nj[k-1][j] for k in xrange(j+1, t + 1)])
             return kseq, bseq
-
-    # def nth_generator(self):
-    #     with workdps(self.dps):
-    #         m = self.m
-    #         return lambda n: ((m+2)*m**(n-1) - 3) / (m - 1) if n > 0 else 0
-    #
-    # def eps_generator(self):
-    #     with workdps(self.dps):
-    #         gamma = self.gamma
-    #         coeff = (gamma - 3) / (gamma - 1)
-    #         return lambda k: coeff * gamma ** (-k)
-    # def sconst(self, k):
-    #     with workdps(self.dps):
-    #        return 2**k * (mpf('0.5')*(self.gamma - 3) / (self.gamma - 1) * self.gamma**(-k))**(mp.ln(2) / mp.ln(self.gamma))
