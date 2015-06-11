@@ -2,6 +2,19 @@ import numpy as np
 
 from numpy import tensordot
 
+
+def from_cores(cores):
+    tt = TensorTrain()
+    if len(cores) == 0:
+        return tt
+    tt.dtype = cores[0].dtype
+    tt.n = tuple([core.shape[1] for core in cores])
+    tt.r = np.array([1] + [core.shape[2] for core in cores])
+    tt.d = len(cores)
+    tt.cores = [core.copy() for core in cores]
+    return tt
+
+
 class TensorTrain(object):
     def __init__(self, data=None, sizes=None, eps=1e-9):
         # From full array
@@ -22,7 +35,7 @@ class TensorTrain(object):
             self.n = ()
             self.cores = []
             self.d = 0
-            self.t = np.array([])
+            self.r = np.array([])
 
     def tt_svd(self, A, eps=1e-9):
         from tt_svd import tt_svd

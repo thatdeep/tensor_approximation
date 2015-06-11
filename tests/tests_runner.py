@@ -228,13 +228,18 @@ print A
 approx_test(A, 3)
 """
 
+
 from tensor_train import TensorTrain, tt_qr, skeleton_decomposition, IndexRC
 
-A = np.random.random((30, 20, 40, 30))
+#A = np.random.random((30, 20, 40, 30))
 #t = TensorTrain(A)
 #skeleton_decomposition(A)
 
-n = A.shape
-ranks = np.array([7, 10,  8], dtype=int)
-irc = IndexRC(n, ranks)
-print irc.index
+#n = A.shape
+#ranks = np.array([7, 10,  8], dtype=int)
+#irc = IndexRC(n, ranks)
+#print irc.index
+
+from tests import verify_simple_sinus_tensor
+
+print [verify_simple_sinus_tensor(d, 10) for d in xrange(2, 7)]
