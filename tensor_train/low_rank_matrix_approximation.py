@@ -198,7 +198,7 @@ def low_rank_approx(F, dims, r=None, delta=1e-6):
         cores.append(np.dot(Q, inv(QQ)))
 
 
-def subcore(A, rows_array, columns_array, k):
+def subcore_old(A, rows_array, columns_array, k):
     from itertools import chain
 
     if len(rows_array) == 0:
@@ -234,6 +234,36 @@ def subcore(A, rows_array, columns_array, k):
     return A[multi_index]
 
 
+def full_index(row_part, column_part, mid_size):
+    from itertools import chain
+
+    m = 1 if type(row_part) == np.ndarray and len(row_part.shape) == 1 else row_part.shape[0]
+    n = 1 if type(column_part) == np.ndarray and len(column_part.shape) == 1 else column_part.shape[0]
+    mid = mid_size
+
+    I = np.repeat(row_part, mid * n) if row_part else ()
+    if m != 1:
+        I = reshape(I, (row_part[0], -1))
+    M = np.tile(np.repeat(np.arange(mid), n), m)
+    J = np.tile(column_part, m * mid) if column_part else ()
+    if n != 1:
+        J = reshape(J, (column_part.shape[0], -1))
+    multi_index = tuple(chain(tuple(I), (M,), tuple(J)))
+    return multi_index
+
+
+def subcore(A, irc, k):
+    from itertools import chain
+
+    mid = A.shape[k]
+    d = len(A.shape)
+    I = tuple(irc[k - 1]) if k > 0 else np.array([])
+    J = tuple(irc[k]) if k < d - 2 else np.array([])
+    multi_index = full_index(I, J, mid)
+    return A[multi_index]
+
+
+
 def index_build(indices, sub_index, rank, dim):
     if not indices:
         indices.append(sub_index)
@@ -255,7 +285,6 @@ def index_build(indices, sub_index, rank, dim):
 class IndexRC(object):
     def __init__(self, n, ranks, initial_index=None):
         self.n = n
-        self.d = len(n)
         self.d = len(n)
 
         if hasattr(ranks, "__len__"):
@@ -294,14 +323,22 @@ class IndexRC(object):
             self.index[k] = np.zeros((density + 1, self.ranks[k]), dtype=int)
             self.index[k][:-1] = self.index[k - 1][:, rank_rows]
             self.index[k][-1] = mode_rows
-        """if direction == 'rl' or direction == 'RL':
-            if k == self.d - 1:
+        if direction == 'rl' or direction == 'RL':
+            if k == self.d - 2:
                 self.index[-1] = sub_index
                 return
             mode_columns, rank_columns = np.unravel_index(sub_index, (self.n[k], self.ranks[k]))
-            if k == self.d - 2:
-                self.index[k] = np.vstack()"""
+            if k == self.d - 3:
+                self.index[k] = np.vstack([mode_columns, self.index[-1][rank_columns]])
+                return
+            density = self.index[k + 1].shape[0]
+            self.index[k] = np.zeros((density + 1, self.ranks[k - 1]), dtype=int)
+            self.index[k][0] = mode_columns
+            self.index[k][1:] = self.index[k + 1][:, rank_columns]
+        return
 
+    def __getitem__(self, item):
+        return self.index[item]
 
 
 def skeleton_decomposition(A, ranks=None, eps=1e-9):
@@ -312,20 +349,15 @@ def skeleton_decomposition(A, ranks=None, eps=1e-9):
         ranks = np.ones(d + 1, dtype=int) * 2
         ranks[0] = ranks[-1] = 1
 
-    irc = IndexRC(n, ranks[1:-1])
-    indices = []
-    for k in xrange(d-1, 0, -1):
-        index_build(indices, np.arange(ranks[k], dtype=int), ranks[k], n[k])
-    Indices = indices[::-1]
+    irc = IndexRC(n, ranks[:])
     cores = []
-    #ind = np.zeros()
 
     # Forward iteration - using set J of columns we build set I of rows with max volume
     for k in xrange(0, d - 1):
-        C = subcore(A, indices, k)
+        C = subcore(A, irc, k)
         print C.shape
 
-        # if k == 0, then ranks[k] is J[0] columns count, and we have ranks[0] x n_1 x ranks[1] matrix
+        # if k == 0, then ranks[k] is J[0] columns count, and we have ranks[0] n_1 x ranks[1] matrix
         # otherwise C reshapes as (ranks[k] * n[k]) x ranks[k + 1] matrix
         C = reshape(C, (ranks[k] * n[k], ranks[k+1]))
 
@@ -338,19 +370,16 @@ def skeleton_decomposition(A, ranks=None, eps=1e-9):
         # compute next core
         cores.append(np.dot(Q, inv(QQ)).reshape((ranks[k], n[k], ranks[k+1])))
     # And we have one core left
-    cores.append(subcore(A, I, J, d-1).reshape((ranks[-2], n[-1], ranks[-1])))
+    cores.append(subcore(A, irc, d-1).reshape((ranks[-2], n[-1], ranks[-1])))
 
-
-    I2 = I
-    J2 = [[]]
     cores2 = []
 
     # Backward iteration - we use set I that we construct to recalculate set J
     for k in xrange(d-1, 1):
-        C = subcore(A, I2, J2, k)
+        C = subcore(A, irc, k)
         print C.shape
 
-        C = reshape(C, (ranks[k], (n[k] * ranks[k+1])))
+        C = reshape(C, (ranks[k], (n[k] * ranks[k+1]))).T
 
         Q, T = qr(C)
         J.append(maxvol(Q))
