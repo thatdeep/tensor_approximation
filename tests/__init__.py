@@ -1,9 +1,9 @@
 __author__ = 'Const'
 
-from low_rank_approx_test import approx_test
 from maxvol_test import maxvol_test
 from operations_test import simple_operation_test
 from k_estimator_test import simple_kseq_test
 #from arg_decomposition_test import uniformly_distributed_approximation_test, small_decomposition_test
 
 from sinus_cores import verify_simple_sinus_tensor
+from multivariate_test import test_sinus
