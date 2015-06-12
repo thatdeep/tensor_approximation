@@ -88,22 +88,58 @@ def low_rank_approx(F, dims, r=None, delta=1e-6):
         cores.append(np.dot(Q, inv(QQ)))
 
 
-def index_build(indices, sub_index, rank, dim):
-    if not indices:
-        indices.append(sub_index)
-        return
-    # unraveled indices for ranks[k] rows
-    index_prev = indices[-1]
-    density = 1 if len(index_prev.shape) == 1 else index_prev.shape[0]
-    # unravel our rn - index
-    rank_rows, mode_rows = np.unravel_index(sub_index, (rank, dim))
+def index_set_iteration(A, irc, direction='lr'):
+    dir_fw, dir_bw = ['lr', 'LR'], ['rl', 'RL']
+    if direction not in (dir_fw + dir_bw):
+        raise Exception("direction must be 'lr' | 'LR' (left-to-right), or 'rl' | 'RL' (right-to-left)")
+    if direction in dir_fw:
+        k_range = xrange(0, irc.d - 1)
+    else:
+        k_range = xrange(irc.d - 1, 0, -1)
 
-    new_rows = np.zeros((density + 1, rank), dtype=int)
-    #new_rows[:-2] = index_prev[:-1]
-    # fill out indices
-    new_rows[:-1, :], new_rows[-1] = index_prev[:, rank_rows], mode_rows
-    indices.append(new_rows)
-    return
+    cores = []
+    for k in k_range:
+        C = subcore(A, irc, k)
+        if direction in dir_bw:
+            C = C.T
+        print C.shape
+
+        C = reshape(C, (irc.ranks[k] * irc.n[k], irc.ranks[k+1]))
+
+        # compute QR of C, QQ - maxvol submatrix of Q, and then compute C_k as Q QQ^-1
+        Q, T = qr(C)
+        rows = maxvol(Q)
+        irc.update_index(rows, k)
+        QQ = Q[rows, :]
+
+        # compute next core
+        next_core = np.dot(Q, inv(QQ))
+        if direction in dir_bw:
+            next_core = next_core.T
+        cores.append(next_core.reshape((irc.ranks[k], irc.n[k], irc.ranks[k+1])))
+    if direction in dir_fw:
+        cores.append(subcore(A, irc, irc.d - 1).reshape((irc.ranks[-2], irc.n[-1], irc.ranks[-1])))
+    else:
+        cores.append(subcore(A, irc, 0).reshape(irc.ranks[0], irc.n[0], irc.ranks[1]))
+        cores = cores[::-1]
+    return cores
+
+
+def skeleton_decomposition_new(A, ranks=None, eps=1e-9):
+    n = A.shape
+    d = len(n)
+    # if ranks is not specified, define them as (2, 2, ..., 2)
+    if ranks == None:
+        ranks = np.ones(d + 1, dtype=int) * 2
+        ranks[0] = ranks[-1] = 1
+
+    irc = IndexRC(n, ranks[:])
+
+    cores = index_set_iteration(A, irc, direction='lr')
+    cores2 = index_set_iteration(A, irc, direction='rl')
+
+    return cores, cores2
+
 
 
 def skeleton_decomposition(A, ranks=None, eps=1e-9):
@@ -117,7 +153,8 @@ def skeleton_decomposition(A, ranks=None, eps=1e-9):
     irc = IndexRC(n, ranks[:])
     cores = []
 
-    # Forward iteration - using set J of columns we build set I of rows with max volume
+    # Forward iteration - using set J of columns we build set I of rows
+    # that corresponds to submatrix of max volume
     for k in xrange(0, d - 1):
         C = subcore(A, irc, k)
         print C.shape
@@ -154,8 +191,6 @@ def skeleton_decomposition(A, ranks=None, eps=1e-9):
 
         # compute next core
         cores2.append(np.dot(Q, inv(QQ)).T.reshape((ranks[k], n[k], ranks[k+1])))
-
-    print 11
 
     cores2.append(subcore(A, irc, 0).reshape(ranks[0], n[0], ranks[1]))
     cores2 = cores2[::-1]

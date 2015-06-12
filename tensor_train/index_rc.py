@@ -32,7 +32,6 @@ class IndexRC(object):
         print self.d - 1, len(self.index)
         assert self.d - 1 == len(self.index), 'Mode number and size of initial index must be equal'
 
-
     def update_index(self, sub_index, k, direction='lr'):
         if direction == 'lr' or direction == 'LR':
             if k == 0:
@@ -81,37 +80,34 @@ class IndexRC(object):
 def full_index(row_part, column_part, mid_size):
     from itertools import chain
 
-    if type(row_part) == np.ndarray:
-        if len(row_part.shape) == 1:
-            m = row_part.size if row_part.size else 1
-            di = 1 if row_part.size else 0
-        else:
-            m = row_part.shape[1]
-            di = row_part.shape[0]
-    else:
-        m = 1
+    def unpack_nd(values):
+        # returns number of elements by multiindex and number of dimensions
+        if len(values.shape) == 0:
+            # scalar value
+            return 1, 1
+        elif len(values.shape) == 1:
+            # vector with shape (s, )
+            return (values.size, 1) if values.size else (1, 0)
+        elif len(values.shape) == 2:
+            # stack of vectors with shape (s, t)
+            return values.shape[::-1]
 
-    if type(column_part) == np.ndarray:
-        if len(column_part.shape) == 1:
-            n = column_part.size if column_part.size else 1
-            dj = 1 if column_part.size else 0
-        else:
-            n = column_part.shape[1]
-            dj = column_part.shape[0]
-    else:
-        n = 1
+    row_part = np.asarray(row_part, dtype=int)
+    column_part = np.asarray(column_part, dtype=int)
 
-    #m = 1 if type(row_part) == np.ndarray and len(row_part.shape) == 1 else row_part.shape[0]
-    #n = 1 if type(column_part) == np.ndarray and len(column_part.shape) == 1 else column_part.shape[0]
+    m, di = unpack_nd(row_part)
     mid = mid_size
+    n, dj = unpack_nd(column_part)
+
 
     I = np.repeat(row_part, mid * n) if row_part.shape else ()
-    if di != 0:
-        I = reshape(I, (di, -1))
     M = np.tile(np.repeat(np.arange(mid), n), m)
     J = np.tile(column_part, m * mid) if column_part.shape else ()
+
+    if di != 0:
+        I = reshape(I, (di, -1))
     if dj != 0:
         J = reshape(J, (dj, -1))
+
     print I, M, J
-    multi_index = tuple(chain(tuple(I), (M,), tuple(J)))
-    return multi_index
+    return tuple(chain(tuple(I), (M,), tuple(J)))
