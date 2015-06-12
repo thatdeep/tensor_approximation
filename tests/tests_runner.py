@@ -12,11 +12,11 @@ for operation_image in ['add', 'sub', 'mul']:
 
 
 # Function approximation part
-#"""
+"""
 from tests import test_sinus
 
 test_sinus()
-#"""
+"""
 
 
 # Maxvol test part
@@ -50,13 +50,13 @@ print [verify_simple_sinus_tensor(d, 10) for d in xrange(2, 5)]
 
 
 # Testing skeleton decomposition
-"""
+#"""
 from tensor_train import TensorTrain, skeleton_decomposition
 
 A = np.random.random((30, 20, 40, 30))
 t = TensorTrain(A)
 skeleton_decomposition(A)
-"""
+#"""
 
 
 # Small test of indexRC class
