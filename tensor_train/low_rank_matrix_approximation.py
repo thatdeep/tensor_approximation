@@ -89,35 +89,36 @@ def low_rank_approx(F, dims, r=None, delta=1e-6):
 
 
 def index_set_iteration(A, irc, direction='lr'):
-    dir_fw, dir_bw = ['lr', 'LR'], ['rl', 'RL']
-    if direction not in (dir_fw + dir_bw):
+    left_right, right_left = ['lr', 'LR'], ['rl', 'RL']
+    if direction not in (left_right + right_left):
         raise Exception("direction must be 'lr' | 'LR' (left-to-right), or 'rl' | 'RL' (right-to-left)")
-    if direction in dir_fw:
+    if direction in left_right:
         k_range = xrange(0, irc.d - 1)
     else:
         k_range = xrange(irc.d - 1, 0, -1)
 
     cores = []
     for k in k_range:
-        C = subcore(A, irc, k)
-        if direction in dir_bw:
-            C = C.T
-        print C.shape
+        C = subcore(A, irc, k, direction=direction)
+        #print C.shape
 
-        C = reshape(C, (irc.ranks[k] * irc.n[k], irc.ranks[k+1]))
+        if direction in left_right:
+            C = reshape(C, (irc.ranks[k] * irc.n[k], irc.ranks[k+1]))
+        else:
+            C = reshape(C, (irc.ranks[k], (irc.n[k] * irc.ranks[k+1]))).T
 
         # compute QR of C, QQ - maxvol submatrix of Q, and then compute C_k as Q QQ^-1
         Q, T = qr(C)
         rows = maxvol(Q)
-        irc.update_index(rows, k)
+        irc.update_index(rows, k, direction=direction)
         QQ = Q[rows, :]
 
         # compute next core
         next_core = np.dot(Q, inv(QQ))
-        if direction in dir_bw:
+        if direction in right_left:
             next_core = next_core.T
         cores.append(next_core.reshape((irc.ranks[k], irc.n[k], irc.ranks[k+1])))
-    if direction in dir_fw:
+    if direction in left_right:
         cores.append(subcore(A, irc, irc.d - 1).reshape((irc.ranks[-2], irc.n[-1], irc.ranks[-1])))
     else:
         cores.append(subcore(A, irc, 0).reshape(irc.ranks[0], irc.n[0], irc.ranks[1]))
@@ -125,7 +126,7 @@ def index_set_iteration(A, irc, direction='lr'):
     return cores
 
 
-def skeleton_decomposition_new(A, ranks=None, eps=1e-9):
+def skeleton(A, ranks=None, eps=1e-9):
     n = A.shape
     d = len(n)
     # if ranks is not specified, define them as (2, 2, ..., 2)
@@ -142,7 +143,7 @@ def skeleton_decomposition_new(A, ranks=None, eps=1e-9):
 
 
 
-def skeleton_decomposition(A, ranks=None, eps=1e-9):
+def skeleton_decomposition_old(A, ranks=None, eps=1e-9):
     n = A.shape
     d = len(n)
     # if ranks is not specified, define them as (2, 2, ..., 2)
@@ -157,7 +158,7 @@ def skeleton_decomposition(A, ranks=None, eps=1e-9):
     # that corresponds to submatrix of max volume
     for k in xrange(0, d - 1):
         C = subcore(A, irc, k)
-        print C.shape
+        #print C.shape
 
         # if k == 0, then ranks[k] is J[0] columns count, and we have ranks[0] n_1 x ranks[1] matrix
         # otherwise C reshapes as (ranks[k] * n[k]) x ranks[k + 1] matrix
@@ -178,8 +179,8 @@ def skeleton_decomposition(A, ranks=None, eps=1e-9):
 
     # Backward iteration - we use set I that we construct to recalculate set J
     for k in xrange(d-1, 0, -1):
-        C = subcore(A, irc, k)
-        print C.shape
+        C = subcore(A, irc, k, direction='rl')
+        #print C.shape
 
         C = reshape(C, (ranks[k], (n[k] * ranks[k+1]))).T
 

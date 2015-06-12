@@ -29,7 +29,7 @@ class IndexRC(object):
         else:
             self.index = initial_index
 
-        print self.d - 1, len(self.index)
+        #print self.d - 1, len(self.index)
         assert self.d - 1 == len(self.index), 'Mode number and size of initial index must be equal'
 
     def update_index(self, sub_index, k, direction='lr'):
@@ -65,8 +65,8 @@ class IndexRC(object):
 
     def multi_index(self, k, direction='lr'):
         left_directions, right_directions = ['lr', 'LR'], ['rl', 'RL']
-        if direction in right_directions:
-            k -= 1
+        #if direction in right_directions:
+        #    k -= 1
         if direction in (left_directions + right_directions):
             mid = self.n[k]
             I = self.index[k - 1] if k > 0 else np.array([])
@@ -109,5 +109,5 @@ def full_index(row_part, column_part, mid_size):
     if dj != 0:
         J = reshape(J, (dj, -1))
 
-    print I, M, J
+    #print I, M, J
     return tuple(chain(tuple(I), (M,), tuple(J)))

@@ -51,11 +51,11 @@ print [verify_simple_sinus_tensor(d, 10) for d in xrange(2, 5)]
 
 # Testing skeleton decomposition
 #"""
-from tensor_train import TensorTrain, skeleton_decomposition
+from tensor_train import TensorTrain, skeleton
 
 A = np.random.random((30, 20, 40, 30))
 t = TensorTrain(A)
-skeleton_decomposition(A)
+skelet = skeleton(A)
 #"""
 
 
