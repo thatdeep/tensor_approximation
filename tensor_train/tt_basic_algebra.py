@@ -12,7 +12,7 @@ def tt_negate(tt):
     A.d = tt.d
     A.n = tt.n
     A.r = tt.r
-    A.cores = tt.cores
+    A.cores = [core.copy() for core in tt.cores]
     A.cores[0] = -A.cores[0]
     return A
 
@@ -87,7 +87,7 @@ def tt_convolve(tt, U):
 def tt_hadamard_prod(tt, other):
     A = TensorTrain()
     if tt.n != other.n:
-        raise Exception('tensor dimensions ' + str(tt.n) + ' and ' + str(other.n) + "didn't match!")
+        raise Exception('tensor dimensions ' + str(tt.n) + ' and ' + str(other.n) + "doesn't match!")
     A.d = tt.d
     A.n = tt.n
     A.r = tt.r * other.r
@@ -105,6 +105,13 @@ def tt_hadamard_prod(tt, other):
         A.cores.append(next_core)
     return A
 
+
+#def tt_scalar_product(tt ,other):
+#    if tt.n != other.n:
+#        raise Exception('dimensions of tensors must be equal')
+#    v =  [np.array(kron(tt.cores[0], other.cores[0])
+#    for k in xrange(1, tt.d):
+#        subcore =
 
 def tt_scalar_product(tt, other):
     A = tt * other

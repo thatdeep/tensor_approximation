@@ -9,6 +9,15 @@ from tests import operations_test
 for operation_image in ['add', 'sub', 'mul']:
     simple_operation_test(operation_image)
 """
+from tensor_train import frobenius_norm
+from tests.sinus_cores import sym_sum_sinus_tensor
+t1 = sym_sum_sinus_tensor(3)
+t2 = sym_sum_sinus_tensor(3)
+print frobenius_norm((t1 - t2).full_tensor())
+print frobenius_norm((t1 - t2).full_tensor())
+
+#from tests import simple_arithmetic_test
+#simple_arithmetic_test(d=4, n=10, operation='mul', percent=0.2, eps=1e-9)
 
 
 # Function approximation part
@@ -50,13 +59,13 @@ print [verify_simple_sinus_tensor(d, 10) for d in xrange(2, 5)]
 
 
 # Testing skeleton decomposition
-#"""
+"""
 from tensor_train import TensorTrain, skeleton
 
 A = np.random.random((30, 20, 40, 30))
 t = TensorTrain(A)
 skelet = skeleton(A)
-#"""
+"""
 
 
 # Small test of indexRC class

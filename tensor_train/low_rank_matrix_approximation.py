@@ -5,7 +5,7 @@ import numpy as np
 from index_rc import IndexRC
 from numpy import dot, reshape
 from numpy.linalg import qr, inv
-from tensor_train import maxvol, TensorTrain
+from tensor_train import maxvol, TensorTrain, from_cores, frobenius_norm
 
 
 def subcore(A, irc, k, direction='lr'):
@@ -88,10 +88,14 @@ def low_rank_approx(F, dims, r=None, delta=1e-6):
         cores.append(np.dot(Q, inv(QQ)))
 
 
-def index_set_iteration(A, irc, direction='lr'):
+def index_set_iteration(A, irc, direction='lr', explicit_cores=True):
+    if type(explicit_cores) is not bool:
+        raise Exception('explicit_cores flag must be True of False')
+
     left_right, right_left = ['lr', 'LR'], ['rl', 'RL']
     if direction not in (left_right + right_left):
         raise Exception("direction must be 'lr' | 'LR' (left-to-right), or 'rl' | 'RL' (right-to-left)")
+
     if direction in left_right:
         k_range = xrange(0, irc.d - 1)
     else:
@@ -111,22 +115,58 @@ def index_set_iteration(A, irc, direction='lr'):
         Q, T = qr(C)
         rows = maxvol(Q)
         irc.update_index(rows, k, direction=direction)
-        QQ = Q[rows, :]
 
-        # compute next core
-        next_core = np.dot(Q, inv(QQ))
-        if direction in right_left:
-            next_core = next_core.T
-        cores.append(next_core.reshape((irc.ranks[k], irc.n[k], irc.ranks[k+1])))
-    if direction in left_right:
-        cores.append(subcore(A, irc, irc.d - 1).reshape((irc.ranks[-2], irc.n[-1], irc.ranks[-1])))
-    else:
-        cores.append(subcore(A, irc, 0).reshape(irc.ranks[0], irc.n[0], irc.ranks[1]))
-        cores = cores[::-1]
-    return cores
+        # compute next core and append cores only if we need explicit cores
+        if explicit_cores:
+            QQ = Q[rows, :]
+
+            # compute next core
+            next_core = np.dot(Q, inv(QQ))
+            if direction in right_left:
+                next_core = next_core.T
+
+            cores.append(next_core.reshape((irc.ranks[k], irc.n[k], irc.ranks[k+1])))
+    # compute last core if we need explicit cores
+    if explicit_cores:
+        if direction in left_right:
+            cores.append(subcore(A, irc, irc.d - 1).reshape((irc.ranks[-2], irc.n[-1], irc.ranks[-1])))
+        else:
+            cores.append(subcore(A, irc, 0).reshape(irc.ranks[0], irc.n[0], irc.ranks[1]))
+            cores = cores[::-1]
+        return cores
 
 
-def skeleton(A, ranks=None, eps=1e-9):
+def skeleton(A, ranks=None, eps=1e-10, max_iter=10):
+    n = A.shape
+    d = len(n)
+    # if ranks is not specified, define them as (2, 2, ..., 2)
+    if ranks == None:
+        ranks = np.ones(d + 1, dtype=int) * 2
+        ranks[0] = ranks[-1] = 1
+
+    irc = IndexRC(n, ranks[:])
+
+    # perform first approximation
+    index_set_iteration(A, irc, direction='lr', explicit_cores=False)
+    prev_approx = from_cores(index_set_iteration(A, irc, direction='rl'))
+
+    for iter in xrange(max_iter):
+        # perform next approximation
+        index_set_iteration(A, irc, direction='lr', explicit_cores=False)
+        next_approx = from_cores(index_set_iteration(A, irc, direction='rl'))
+
+        if frobenius_norm(next_approx - prev_approx) < eps:
+            break
+        prev_approx = next_approx
+
+    # now we have approximation to tensor A with fixed ranks
+    rounded_approx = next_approx.tt_round(eps)
+    rounded_ranks = rounded_approx.r
+
+
+    return
+
+def skeleton_base(A, ranks=None, eps=1e-9):
     n = A.shape
     d = len(n)
     # if ranks is not specified, define them as (2, 2, ..., 2)

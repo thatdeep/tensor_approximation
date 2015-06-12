@@ -1,10 +1,13 @@
-from numpy.linalg import norm
-from numpy import reshape
+import numpy as np
+
+from core import TensorTrain
 
 
 def frobenius_norm(A):
-    return norm(reshape(A, A.size))
-
+    if isinstance(A, TensorTrain):
+        return A.tt_frobenius_norm()
+    if isinstance(A, np.ndarray):
+        return np.linalg.norm(A)
 
 def rank_chop(s_values, delta):
     error = 0

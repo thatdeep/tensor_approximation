@@ -1,3 +1,4 @@
+import math
 import numpy as np
 
 from numpy import tensordot
@@ -99,6 +100,10 @@ class TensorTrain(object):
     def tt_scalar_product(self, other):
         from tt_basic_algebra import tt_scalar_product
         return tt_scalar_product(self, other)
+
+    def tt_frobenius_norm(self):
+        val = self.tt_scalar_product(self)
+        return math.sqrt(val)
 
     def printable_basic_info(self):
         return 'core elements | core shapes | suppression ranks:\n' +\
