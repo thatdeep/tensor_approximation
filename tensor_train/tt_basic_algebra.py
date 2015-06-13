@@ -4,7 +4,12 @@ import math
 from numpy import dot, zeros, ones, eye, identity as I, reshape, tensordot, kron
 from numpy.linalg import svd, norm, qr
 
-from core import TensorTrain
+from core import TensorTrain, from_cores
+
+
+def tt_zeros(n):
+    # TODO what shall we do if we have one/two dimensional tensors?
+    return from_cores([np.zeros(elements)[np.newaxis, ..., np.newaxis] for elements in n])
 
 
 def tt_negate(tt):
@@ -106,13 +111,44 @@ def tt_hadamard_prod(tt, other):
     return A
 
 
-#def tt_scalar_product(tt ,other):
-#    if tt.n != other.n:
-#        raise Exception('dimensions of tensors must be equal')
-#    v =  [np.array(kron(tt.cores[0], other.cores[0])
-#    for k in xrange(1, tt.d):
-#        subcore =
+def tt_scalar_product(tt ,other):
+    if tt.n != other.n:
+        raise Exception('dimensions of tensors must be equal')
 
-def tt_scalar_product(tt, other):
+    first = tt.cores[0].reshape(tt.cores[0].shape[1:])
+    second = other.cores[0].reshape(other.cores[0].shape[1:])
+    v =  np.sum([np.kron(first[i], second[i]) for i in xrange(tt.n[0])], axis=0)
+    for k in xrange(1, tt.d):
+        A = tt.cores[k]
+        B = other.cores[k]
+        subvectors = [np.dot(v, np.kron(A[:, i, :], B[:, i, :])) for i in xrange(tt.n[k])]
+        v = np.sum(subvectors, axis=0)
+    # I don't know now how to avoid unstability of scalar product on tensors that are close to zero
+    return abs(v[0])
+
+
+def tt_scalar_product_old(tt, other):
     A = tt * other
     return A.tt_convolve([np.ones(dimension) for dimension in A.n])
+
+"""
+# scalar product comparison - tt_scalar_product and tt_scalar_product_old are unstable on
+# tensors that are close to zero
+def xxx(begin, end):
+    from tensor_train import TensorTrain, frobenius_norm
+    from tensor_train.tt_basic_algebra import tt_scalar_product, tt_scalar_product_old
+    from tests.sinus_cores import sym_sum_sinus_tensor
+    res = []
+    for i in xrange(begin, end):
+        A = sym_sum_sinus_tensor(i)
+        B = TensorTrain(A)
+        #C = A
+        C = A - B
+        CC = C.full_tensor()
+        raw = frobenius_norm(CC)
+        sc = tt_scalar_product(C, C)
+        sch = tt_scalar_product_old(C, C)
+        print "i: {i}, sc: {sc}, sch: {sch}, raw: {raw}".format(i=i, sc=sc, sch=sch, raw=raw)
+        res.append((i, sc, sch, raw))
+    return res
+"""

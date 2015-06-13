@@ -5,6 +5,7 @@ from core import TensorTrain
 from utils import rank_chop
 from numpy import reshape, dot, tensordot
 from numpy.linalg.linalg import svd, qr
+from tt_basic_algebra import tt_zeros
 
 
 def tt_round(tt, eps=1e-9):
@@ -12,11 +13,8 @@ def tt_round(tt, eps=1e-9):
     n = tt.n
     delta = eps / math.sqrt(d - 1)
 
-    B = TensorTrain()
-    B.d = tt.d
-    B.n = tt.n
+    B = TensorTrain(tt)
     B.r = np.zeros_like(tt.r)
-    B.cores = [core[:] for core in tt.cores]
 
     for k in xrange(d - 1, 0, -1):
         # Find reshaping dimensions
@@ -47,6 +45,9 @@ def tt_round(tt, eps=1e-9):
         B.cores[k], s, V = svd(cur_core, full_matrices=False)
         B.r[k+1] = rank_chop(s, delta)
         r_new = B.r[k + 1]
+        if r_new == 0:
+            # Tensor becomes zero as convolution by rank 0
+            return tt_zeros(n)
         B.cores[k] = B.cores[k][:, :r_new]
         B.cores[k] = reshape(B.cores[k], (B.r[k], B.n[k], B.r[k+1]))
         V = V[:r_new]

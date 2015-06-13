@@ -4,6 +4,7 @@ import math
 from utils import frobenius_norm, rank_chop
 from numpy import reshape, dot
 from numpy.linalg.linalg import svd
+from tt_basic_algebra import tt_zeros
 
 
 # TODO make norm redistribution
@@ -23,7 +24,9 @@ def tt_svd(tt, A, eps=1e-9):
         U, s, V = svd(C, full_matrices=False)
         ranks[k + 1] = rank_chop(s, delta)
         r_new = ranks[k + 1]
-
+        if r_new == 0:
+            # Tensor becomes zero as convolution by rank 0
+            tt = tt_zeros(tt.n)
         U = U[:, :ranks[k + 1]]
         tt.cores.append(reshape(U, (ranks[k], ns[k], r_new)))
         V = V[:r_new, :]

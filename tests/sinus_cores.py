@@ -24,7 +24,6 @@ def sum_sinus_tensor(requested_shape, bounds=[0, 1], discretization=10):
 """
 
 def sym_sum_sinus_tensor(d, bounds=[0, 1], discretization=10):
-    n = tuple([d]*discretization)
     space = np.linspace(bounds[0], bounds[1], discretization, endpoint=False)
     sinx, cosx = np.sin(space), np.cos(space)
 
@@ -49,3 +48,12 @@ def verify_simple_sinus_tensor(d, discretization=10):
     nrm = np.linalg.norm(exact_representation - ethalon)
     print nrm
     return nrm < 1e-14
+
+
+def yyy(d, discretization=10):
+    shp = tuple([discretization]*d)
+    ethalon = np.zeros(shp)
+    for i in np.ndindex(*shp):
+        multiplier = 1. / discretization
+        ethalon[i] = np.sin(multiplier*np.sum(i))
+    return np.linalg.norm(ethalon)
