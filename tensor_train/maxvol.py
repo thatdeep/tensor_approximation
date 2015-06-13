@@ -40,7 +40,7 @@ def maxvol(A, max_iters=100, eps=5e-2):
         bb[i_row] += 1
         cc = z[i_row, :]
         cc[j_row] -= 1
-        print z.shape, bb.shape, cc.shape
+        #print z.shape, bb.shape, cc.shape
         z -= np.outer(bb, cc) / z[i_row, j_row]
         iter += 1
         ind = permutation_vector[:r]

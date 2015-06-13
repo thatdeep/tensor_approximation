@@ -51,7 +51,7 @@ def tt_round(tt, eps=1e-9):
         B.cores[k] = B.cores[k][:, :r_new]
         B.cores[k] = reshape(B.cores[k], (B.r[k], B.n[k], B.r[k+1]))
         V = V[:r_new]
-        print '>>>', s.size, r_new
+        #print '>>>', s.size, r_new
         s = s[:r_new]
         B.cores[k+1] = tensordot(dot(np.diag(s), V), B.cores[k+1], [1, 0])
     return B

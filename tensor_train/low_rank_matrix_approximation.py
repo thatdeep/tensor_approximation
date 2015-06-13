@@ -136,35 +136,52 @@ def index_set_iteration(A, irc, direction='lr', explicit_cores=True):
         return cores
 
 
-def skeleton(A, ranks=None, eps=1e-10, max_iter=10):
+def recalculate_ranks(ranks, rounded_ranks, unstable_ranks):
+    unstable_indices = np.where(unstable_ranks)
+    stabilization_indices = np.where(ranks > rounded_ranks)
+    unstable_ranks[stabilization_indices] = False
+    ranks[unstable_ranks] += 1
+
+
+def skeleton(A, ranks=None, eps=1e-5, max_iter=10):
     n = A.shape
     d = len(n)
     # if ranks is not specified, define them as (2, 2, ..., 2)
     if ranks == None:
         ranks = np.ones(d + 1, dtype=int) * 2
         ranks[0] = ranks[-1] = 1
+    ranks_unstable = np.ones_like(ranks, dtype=np.bool)
+    ranks_unstable[0] = ranks_unstable[-1] = False
 
-    irc = IndexRC(n, ranks[:])
+    while True:
+        irc = IndexRC(n, ranks[:])
 
-    # perform first approximation
-    index_set_iteration(A, irc, direction='lr', explicit_cores=False)
-    prev_approx = from_cores(index_set_iteration(A, irc, direction='rl'))
-
-    for iter in xrange(max_iter):
-        # perform next approximation
+        # perform first approximation
         index_set_iteration(A, irc, direction='lr', explicit_cores=False)
-        next_approx = from_cores(index_set_iteration(A, irc, direction='rl'))
+        prev_approx = from_cores(index_set_iteration(A, irc, direction='rl'))
+        print "Inner iterations with ranks {r}".format(r=ranks)
+        for i in xrange(max_iter):
+            # perform next approximation
+            index_set_iteration(A, irc, direction='lr', explicit_cores=False)
+            next_approx = from_cores(index_set_iteration(A, irc, direction='rl'))
 
-        if frobenius_norm(next_approx - prev_approx) < eps:
-            break
-        prev_approx = next_approx
+            # TODO Did we really need tt_round here?
+            difference = frobenius_norm((next_approx - prev_approx))
+            print "difference: {d}, eps: {eps}".format(d=difference, eps=eps)
+            if difference < eps:
+                print "Reach close approximation on {i} iteration with ranks {r}".format(i=i+1, r=ranks)
+                break
+            prev_approx = next_approx
 
-    # now we have approximation to tensor A with fixed ranks
-    rounded_approx = next_approx.tt_round(eps)
-    rounded_ranks = rounded_approx.r
-
-
-    return
+        # now we have approximation to tensor A with fixed ranks
+        rounded_approx = next_approx.tt_round()
+        rounded_ranks = rounded_approx.r
+        print "ranks    : {r}\nnew ranks: {nr}".format(r=ranks, nr=rounded_ranks)
+        recalculate_ranks(ranks, rounded_ranks, ranks_unstable)
+        if not np.any(ranks_unstable):
+            # All ranks are stablilize
+            print "Stabilize!"
+            return rounded_approx
 
 def skeleton_base(A, ranks=None, eps=1e-9):
     n = A.shape
