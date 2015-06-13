@@ -57,3 +57,11 @@ def yyy(d, discretization=10):
         multiplier = 1. / discretization
         ethalon[i] = np.sin(multiplier*np.sum(i))
     return np.linalg.norm(ethalon)
+
+def yy(d, discretization=10):
+    shp = tuple([discretization]*d)
+    ethalon = np.zeros(shp)
+    for i in np.ndindex(*shp):
+        multiplier = 1. / discretization
+        ethalon[i] = np.sin(multiplier*np.sum(i))
+    return ethalon

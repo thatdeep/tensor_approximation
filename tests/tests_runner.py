@@ -72,10 +72,12 @@ from tests.sinus_cores import sym_sum_sinus_tensor
 
 #A = np.random.random((30, 20, 40, 30))
 #t = TensorTrain(A)
-t = sym_sum_sinus_tensor(8)
+t = sym_sum_sinus_tensor(7)
 skelet = skeleton(t.full_tensor())
-print frobenius_norm((skelet - t).tt_round())
-#print frobenius_norm(skelet.full_tensor() - t.full_tensor())
+xx = (skelet - t).full_tensor()
+print frobenius_norm((skelet - t).tt_round(eps=1e-12))
+print np.max(np.abs(xx))
+print frobenius_norm(skelet.full_tensor() - t.full_tensor())
 
 
 # Small test of indexRC class

@@ -8,7 +8,8 @@ from numpy.linalg.linalg import svd, qr
 from tt_basic_algebra import tt_zeros
 
 
-def tt_round(tt, eps=1e-9):
+def tt_round(tt, eps=1e-10):
+
     d = tt.d
     n = tt.n
     delta = eps / math.sqrt(d - 1)

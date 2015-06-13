@@ -143,7 +143,7 @@ def recalculate_ranks(ranks, rounded_ranks, unstable_ranks):
     ranks[unstable_ranks] += 1
 
 
-def skeleton(A, ranks=None, eps=1e-5, max_iter=10):
+def skeleton(A, ranks=None, eps=1e-6, max_iter=10):
     n = A.shape
     d = len(n)
     # if ranks is not specified, define them as (2, 2, ..., 2)
@@ -166,7 +166,7 @@ def skeleton(A, ranks=None, eps=1e-5, max_iter=10):
             next_approx = from_cores(index_set_iteration(A, irc, direction='rl'))
 
             # TODO Did we really need tt_round here?
-            difference = frobenius_norm((next_approx - prev_approx))
+            difference = frobenius_norm((next_approx - prev_approx).full_tensor())
             print "difference: {d}, eps: {eps}".format(d=difference, eps=eps)
             if difference < eps:
                 print "Reach close approximation on {i} iteration with ranks {r}".format(i=i+1, r=ranks)

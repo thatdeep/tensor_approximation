@@ -17,6 +17,20 @@ def from_cores(cores):
 
 
 class TensorTrain(object):
+    """TensorTrain class - implementation of TT format.
+
+    TT format include representation of tensor as a convolution of
+    low-rank tensors (cores) with suppression ranks.
+
+    Attributes:
+        n (tuple): Shape of tensor
+        d (int): Number of dimensions
+        r (np.ndarray): Compression ranks
+        cores (list[np.ndarray]): TT cores
+        dtype (np.dtype): Data type of tensor values
+
+
+    """
     def __init__(self, data=None, sizes=None, eps=1e-9):
         # From full array
         if isinstance(data, np.ndarray):
