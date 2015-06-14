@@ -22,10 +22,14 @@ class IndexRC(object):
             steps /= ranks[1:-1]
             assert not np.sum(steps == 0)
 
-            self.update_index(np.arange(0, ranks[1]*steps[0], step=steps[0], dtype=int), k=0)
-            for k in xrange(1, self.d-1, 1):
-                self.update_index(np.arange(0, ranks[k + 1]*steps[k], step=steps[k], dtype=int), k)
-            self.index = self.index[::-1]
+            self.update_index(np.arange(0, ranks[self.d - 1]*steps[0], step=steps[0], dtype=int), k=self.d - 1, direction='rl')
+            for k in xrange(self.d - 2, 0, -1):
+                self.update_index(np.arange(0, ranks[k]*steps[k], step=steps[k], dtype=int), k, direction='rl')
+            #xrange(irc.d - 1, 0, -1)
+            #self.update_index(np.arange(0, ranks[1]*steps[0], step=steps[0], dtype=int), k=0)
+            #for k in xrange(1, self.d-1, 1):
+            #    self.update_index(np.arange(0, ranks[k + 1]*steps[k], step=steps[k], dtype=int), k)
+            #self.index = self.index[::-1]
         else:
             self.index = initial_index
 

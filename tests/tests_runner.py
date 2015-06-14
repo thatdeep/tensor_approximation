@@ -66,20 +66,47 @@ print [verify_simple_sinus_tensor(d, 10) for d in xrange(2, 5)]
 
 
 # Testing skeleton decomposition
-
+"""
 from tensor_train import TensorTrain, skeleton, frobenius_norm
 from tests.sinus_cores import sym_sum_sinus_tensor
 
 #A = np.random.random((30, 20, 40, 30))
 #t = TensorTrain(A)
-t = sym_sum_sinus_tensor(7)
+t = sym_sum_sinus_tensor(8)
 skelet = skeleton(t.full_tensor())
 xx = (skelet - t).full_tensor()
 print frobenius_norm((skelet - t).tt_round(eps=1e-12))
 print np.max(np.abs(xx))
 print frobenius_norm(skelet.full_tensor() - t.full_tensor())
+"""
 
+from tensor_train import TensorTrain, frobenius_norm
+from tensor_train import BlackBox
 
+def f(x):
+    return np.sum(x)**5
+
+dims = tuple([10, 20, 10, 10])
+d = len(dims)
+
+bounds = np.vstack([[0, 5], [0, 10], [0, 5], [0, 5]])
+spaces = [np.linspace(bound[0], bound[1], dim, endpoint=False) for (bound, dim) in zip(bounds, dims)]
+def f_box_generator(f, spaces):
+    return lambda i: f([spaces[idx][ii] for idx, ii in enumerate(i)])
+
+f_box = f_box_generator(f, spaces)
+
+black_box = BlackBox(f_box, dims, d, dtype=np.float, array_based=False)
+t = TensorTrain(black_box)
+
+F = np.fromiter((f([spaces[idx][ii] for idx, ii in enumerate(i)]) for i in np.ndindex(*dims)), dtype=np.float).reshape(dims)
+print F.shape
+tr = t.tt_round(eps=1e-8)
+print tr.r
+TF = tr.full_tensor()
+D = TF - F
+print frobenius_norm(D)
+print np.max(np.abs(D))
 # Small test of indexRC class
 """
 from tensor_train import IndexRC

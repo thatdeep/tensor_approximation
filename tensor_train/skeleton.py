@@ -61,9 +61,9 @@ def index_set_iteration(A, irc, direction='lr', explicit_cores=True):
         return cores
 
 
-def recalculate_ranks(ranks, rounded_ranks, unstable_ranks):
+def recalculate_ranks(ranks, rounded_ranks, unstable_ranks, maxranks):
     unstable_indices = np.where(unstable_ranks)
-    stabilization_indices = np.where(ranks > rounded_ranks)
+    stabilization_indices = np.where(np.logical_or(ranks > rounded_ranks, ranks >= maxranks))
     unstable_ranks[stabilization_indices] = False
     ranks[unstable_ranks] += 1
 
@@ -71,6 +71,9 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
     n = A.shape
     d = len(n)
     # if ranks is not specified, define them as (2, 2, ..., 2)
+    maxranks = np.asarray(n)[1:]
+    maxranks[np.asarray(n[:-1]) < maxranks] = np.asarray(n[:-1])[np.asarray(n[:-1]) < maxranks]
+    maxranks = np.array([1] + list(maxranks) + [1])
     if ranks == None:
         ranks = np.ones(d + 1, dtype=int) * 2
         ranks[0] = ranks[-1] = 1
@@ -101,7 +104,7 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
         rounded_approx = next_approx.tt_round()
         rounded_ranks = rounded_approx.r
         print "ranks    : {r}\nnew ranks: {nr}".format(r=ranks, nr=rounded_ranks)
-        recalculate_ranks(ranks, rounded_ranks, ranks_unstable)
+        recalculate_ranks(ranks, rounded_ranks, ranks_unstable, maxranks)
         if not np.any(ranks_unstable):
             # All ranks are stablilize
             print "Stabilize!"

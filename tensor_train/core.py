@@ -50,6 +50,7 @@ class TensorTrain(object):
             self.d = black_box.d
             if decompose == 'skeleton':
                 self.cores = skeleton(black_box, cores_only=True, eps=eps)
+                self.r = np.array([1] + [core.shape[2] for core in self.cores])
             elif decompose == 'svd':
                 self.tt_svd(black_box, eps=eps)
 

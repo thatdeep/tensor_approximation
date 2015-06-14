@@ -25,4 +25,4 @@ class BlackBox(object):
             if self.array_based:
                 return self.f(it)
             else:
-                return np.fromiter((self.f(col) for col in it.T))
+                return np.fromiter((self.f(col) for col in it.T), dtype=self.dtype)
