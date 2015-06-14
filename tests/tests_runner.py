@@ -67,7 +67,7 @@ print [verify_simple_sinus_tensor(d, 10) for d in xrange(2, 5)]
 
 # Testing skeleton decomposition
 
-from tensor_train import TensorTrain, skeleton, from_cores, frobenius_norm
+from tensor_train import TensorTrain, skeleton, frobenius_norm
 from tests.sinus_cores import sym_sum_sinus_tensor
 
 #A = np.random.random((30, 20, 40, 30))

@@ -2,19 +2,7 @@ import math
 import numpy as np
 
 from numpy import tensordot
-
-
-def from_cores(cores):
-    tt = TensorTrain()
-    if len(cores) == 0:
-        return tt
-    tt.dtype = cores[0].dtype
-    tt.n = tuple([core.shape[1] for core in cores])
-    tt.r = np.array([1] + [core.shape[2] for core in cores])
-    tt.d = len(cores)
-    tt.cores = [core.copy() for core in cores]
-    return tt
-
+from black_box import BlackBox
 
 class TensorTrain(object):
     """TensorTrain class - implementation of TT format.
@@ -31,26 +19,61 @@ class TensorTrain(object):
 
 
     """
-    def __init__(self, data=None, sizes=None, eps=1e-9):
-        # From full array
-        if isinstance(data, np.ndarray):
-            A = np.asarray(data)
-            self.dtype = A.dtype
-            self.tt_svd(A, eps)
-        # From another TT - copy constructor
-        if isinstance(data, TensorTrain):
-            self.dtype = data.dtype
-            self.n = data.n
-            self.d = data.d
-            self.cores = [core.copy() for core in data.cores]
-            self.r = data.r
-        # Empty constructor
-        elif data is None and sizes is None:
+    def __init__(self, black_box=None, decompose='skeleton', eps=1e-9):
+        from skeleton import skeleton
+        accepted_types = ['svd', 'skeleton']
+        if decompose not in accepted_types:
+            raise Exception('decompose must be one of the following: {types}'.format(types=accepted_types))
+
+        if black_box == None:
+            # Empty constructor
             self.dtype = np.float
             self.n = ()
+            self.shape = ()
             self.cores = []
             self.d = 0
             self.r = np.array([])
+        elif isinstance(black_box, TensorTrain):
+            # Copy constructor
+            self.dtype = black_box.dtype
+            self.n = black_box.n
+            self.shape = ()
+            self.d = black_box.d
+            self.r = black_box.r
+            self.cores = [core.copy() for core in black_box.cores]
+        elif isinstance(black_box, BlackBox):
+            # Constructor from some "Black Box" tensor from which we can
+            # retrieve arbitrary elements
+            self.dtype = black_box.dtype
+            self.n = black_box.n
+            self.shape = black_box.shape
+            self.d = black_box.d
+            if decompose == 'skeleton':
+                self.cores = skeleton(black_box, cores_only=True, eps=eps)
+            elif decompose == 'svd':
+                self.tt_svd(black_box, eps=eps)
+
+    @classmethod
+    def from_array(cls, data, decompose='skeleton'):
+        accepted_types = ['svd', 'skeleton']
+        if decompose not in accepted_types:
+            raise Exception('decompose must be one of the following: {types}'.format(types=accepted_types))
+        if isinstance(data, np.ndarray):
+            black_box = BlackBox.from_array(data)
+            cls(black_box, decompose)
+
+    @classmethod
+    def from_cores(cls, cores):
+        tt = TensorTrain()
+        if len(cores) == 0:
+            return tt
+        tt.dtype = cores[0].dtype
+        tt.n = tuple([core.shape[1] for core in cores])
+        tt.r = np.array([1] + [core.shape[2] for core in cores])
+        tt.d = len(cores)
+        tt.cores = [core.copy() for core in cores]
+        return tt
+
 
     def tt_svd(self, A, eps=1e-9):
         from tt_svd import tt_svd

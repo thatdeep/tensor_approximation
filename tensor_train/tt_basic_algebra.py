@@ -4,12 +4,12 @@ import math
 from numpy import dot, zeros, ones, eye, identity as I, reshape, tensordot, kron
 from numpy.linalg import svd, norm, qr
 
-from core import TensorTrain, from_cores
+from core import TensorTrain
 
 
 def tt_zeros(n):
     # TODO what shall we do if we have one/two dimensional tensors?
-    return from_cores([np.zeros(elements)[np.newaxis, ..., np.newaxis] for elements in n])
+    return TensorTrain.from_cores([np.zeros(elements)[np.newaxis, ..., np.newaxis] for elements in n])
 
 
 def tt_negate(tt):

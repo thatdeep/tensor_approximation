@@ -1,6 +1,6 @@
 import numpy as np
 
-from tensor_train import TensorTrain, from_cores
+from tensor_train import TensorTrain
 
 """
 def sum_sinus_tensor(requested_shape, bounds=[0, 1], discretization=10):
@@ -33,7 +33,7 @@ def sym_sum_sinus_tensor(d, bounds=[0, 1], discretization=10):
                              np.vstack([-sinx, cosx])])
     middle_core = np.reshape(middle_core, (2, 2, -1)).transpose((0, 2, 1))
 
-    return from_cores([first_core] + [middle_core.copy() for _ in xrange(d - 2)] + [last_core])
+    return TensorTrain.from_cores([first_core] + [middle_core.copy() for _ in xrange(d - 2)] + [last_core])
 
 
 def verify_simple_sinus_tensor(d, discretization=10):
