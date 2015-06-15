@@ -12,7 +12,7 @@ class IndexRC(object):
             self.ranks = ranks
         else:
             self.ranks = np.ones(self.d + 1, dtype=int)*ranks
-            ranks[0] = ranks[-1] = 1
+            self.ranks[0] = self.ranks[-1] = 1
 
         if initial_index == None:
             self.index = [0]*(self.d - 1)
@@ -22,9 +22,11 @@ class IndexRC(object):
             steps /= ranks[1:-1]
             assert not np.sum(steps == 0)
 
-            self.update_index(np.arange(0, ranks[self.d - 1]*steps[0], step=steps[0], dtype=int), k=self.d - 1, direction='rl')
-            for k in xrange(self.d - 2, 0, -1):
-                self.update_index(np.arange(0, ranks[k]*steps[k], step=steps[k], dtype=int), k, direction='rl')
+            for k in xrange(self.d - 1):
+                self.index[k] = semi_random_multi_index(self.n[k + 1:], self.ranks[k + 1])
+            #self.update_index(np.arange(0, ranks[self.d - 1]*steps[0], step=steps[0], dtype=int), k=self.d - 1, direction='rl')
+            #for k in xrange(self.d - 2, 0, -1):
+            #    self.update_index(np.arange(0, ranks[k]*steps[k], step=steps[k], dtype=int), k, direction='rl')
             #xrange(irc.d - 1, 0, -1)
             #self.update_index(np.arange(0, ranks[1]*steps[0], step=steps[0], dtype=int), k=0)
             #for k in xrange(1, self.d-1, 1):
@@ -79,6 +81,37 @@ class IndexRC(object):
             return multi_index
         else:
             raise Exception("Wrong direction parameter (Must be 'lr' or 'rl')")
+
+
+def semi_random_multi_index(shape, r):
+    sizeall = reduce(lambda x, y: x*y, shape, 1)
+    d = len(shape)
+    if r > sizeall:
+        raise Exception("You can't create {r} uniq elements from {n} elements").format(r=r, n=sizeall)
+    if r > sizeall*9/10:
+        print "Warning! We have wery little probability for reach {r} uniqs".format(r=r)
+    uniqs = set()
+
+    # Just create some more random elements than r
+    rand_indices = np.vstack([np.random.randint(0, dim_size, 2*r) for dim_size in shape]).T
+    for rand_index in rand_indices:
+        tupled = tuple(rand_index)
+        if tupled not in uniqs:
+            uniqs.add(tupled)
+        if len(uniqs) == r:
+            break
+
+    # If we haven't find enough unique indices just take them with loop
+    if len(uniqs) < r:
+        delta = len(uniqs) - r
+        print 'delta: {d}'.format(d=delta)
+        while delta > 0:
+            tupled = tuple([np.random.randint(0, dim_size) for dim_size in shape])
+            if tupled not in uniqs:
+                uniqs.add(tupled)
+                delta -= 1
+    # Return indices as list of np.ndarray
+    return np.vstack([np.array(uniq) for uniq in uniqs]).T
 
 
 def full_index(row_part, column_part, mid_size):
