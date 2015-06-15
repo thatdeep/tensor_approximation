@@ -93,7 +93,7 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
             next_approx = TensorTrain.from_cores(index_set_iteration(A, irc, direction='rl'))
 
             # TODO Did we really need tt_round here?
-            difference = frobenius_norm((next_approx - prev_approx).full_tensor())
+            difference = frobenius_norm(next_approx - prev_approx)
             print "difference: {d}, eps: {eps}".format(d=difference, eps=eps)
             if difference < eps:
                 print "Reach close approximation on {i} iteration with ranks {r}".format(i=i+1, r=ranks)

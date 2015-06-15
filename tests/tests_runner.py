@@ -80,6 +80,7 @@ print np.max(np.abs(xx))
 print frobenius_norm(skelet.full_tensor() - t.full_tensor())
 """
 
+"""
 from tensor_train import TensorTrain, frobenius_norm
 from tensor_train import BlackBox
 
@@ -108,6 +109,48 @@ D = TF - F
 print frobenius_norm(D)
 print np.max(np.abs(D))
 # Small test of indexRC class
+"""
+
+from tensor_train import TensorTrain, frobenius_norm
+from tensor_train import BlackBox
+
+def f(x):
+    arg = np.sum(x)
+    if arg == 0: arg = 1
+    return np.sin(1.0 / arg)
+
+dims = tuple([10, 20, 10, 10, 10, 10])
+d = len(dims)
+
+bounds = np.vstack([[0, 5], [0, 10], [0, 5], [0, 5], [0, 5], [0, 5]])
+spaces = [np.linspace(-bound[1], bound[0], dim, endpoint=False) for (bound, dim) in zip(bounds, dims)]
+def f_box_generator(f, spaces):
+    return lambda i: f([spaces[idx][ii] for idx, ii in enumerate(i)])
+
+f_box = f_box_generator(f, spaces)
+
+black_box = BlackBox(f_box, dims, d, dtype=np.float, array_based=False)
+t = TensorTrain(black_box)
+
+F = np.fromfile('../f.arr').reshape(dims)
+#F = np.fromiter((f([spaces[idx][ii] for idx, ii in enumerate(i)]) for i in np.ndindex(*dims)), dtype=np.float).reshape(dims)
+print F.shape
+print t.r
+T = t.full_tensor()
+D = T - F
+print frobenius_norm(D)
+print np.max(np.abs(D))
+
+print '-'*80
+
+tr = t.tt_round(eps=1e-6)
+print tr.r
+TF = tr.full_tensor()
+D = TF - F
+print frobenius_norm(D)
+print np.max(np.abs(D))
+
+
 """
 from tensor_train import IndexRC
 
