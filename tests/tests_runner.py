@@ -158,10 +158,12 @@ def test_f_sym(f, d, bounds=None, discr=10, eps=1e-9):
         bounds = [0, 1]
     n = tuple([discr]*d)
     space = np.linspace(bounds[0], bounds[1], discr, endpoint=False)
-    black_box = BlackBox(lambda i: f([space[ii] for ii in i]), n, d, dtype=np.float, array_based=False)
+    black_box = BlackBox(lambda i: f([space[ii] for ii in i]), bounds, n, d, dtype=np.float, array_based=False)
     return TensorTrain(black_box, eps=eps), black_box
 
 xxx = []
+
+import cProfile
 
 for d in [10, 100, 250]:
     dims = tuple([10]*d)
@@ -169,6 +171,7 @@ for d in [10, 100, 250]:
     eps = 1e-5
 
     #t_exact = sym_sum_sinus_tensor(d, discretization=discr)
+    cProfile.run('t_approx, f_exact = test_f_sym(f, d, discr=discr, eps=eps)')
     t_approx, f_exact = test_f_sym(f, d, discr=discr, eps=eps)
     print t_approx.r
 

@@ -1,7 +1,7 @@
 import numpy as np
 
 class BlackBox(object):
-    def __init__(self, f, n, d, dtype=np.float, array_based=False):
+    def __init__(self, f, bounds, n, d, dtype=np.float, array_based=False):
         self.array_based = array_based
         if not hasattr(n, "__len__"):
             self.n = tuple([n]*d)
@@ -11,6 +11,7 @@ class BlackBox(object):
         self.f = f
         self.d = d
         self.dtype=dtype
+        self.spaces =
 
     @classmethod
     def from_array(cls, data):
@@ -25,4 +26,5 @@ class BlackBox(object):
             if self.array_based:
                 return self.f(it)
             else:
-                return np.fromiter((self.f(col) for col in it.T), dtype=self.dtype)
+                return np.apply_along_axis(self.f, 1, it.T)
+                #return np.fromiter((self.f(col) for col in it.T), dtype=self.dtype)

@@ -1,12 +1,12 @@
-import numpy as np
 import math
+import numpy as np
 
 from core import TensorTrain
-from utils import rank_chop
-from numpy import reshape, dot, tensordot
-from numpy.linalg.linalg import svd, qr
+from numpy import reshape, dot
 from tt_basic_algebra import tt_zeros
 from utils import frobenius_norm, csvd
+
+from numpy.linalg import qr
 
 
 def tt_round(t, eps=1e-10, reuse=False):
@@ -49,7 +49,6 @@ def tt_round(t, eps=1e-10, reuse=False):
 
         # move dimension from right indices to left indices
         cores[k] = reshape(cores[k], (r[k], n[k], r[k+1]))
-        #B.cores[k] = reshape(B.cores[k], (B.cores[k].shape[0], B.n[k], B.cores[k].shape[1] / B.n[k]))
 
         # Convolve cores[k-1] with R^t
         cores[k-1] = reshape(cores[k-1], (r[k-1] * n[k-1], r[k]))
@@ -74,8 +73,9 @@ def tt_round(t, eps=1e-10, reuse=False):
         cores[k+1] = reshape(cores[k+1], (r[k+1], n[k+1] * r[k+2]))
         cores[k+1] = dot(dot(np.diag(s), V), cores[k+1])
         cores[k+1] = reshape(cores[k+1], (sr[k+1], n[k+1], r[k+2]))
-    return TensorTrain.from_cores(cores)
+    return TensorTrain.from_cores(cores, reuse=True)
 
+"""
 def tt_round_modified(tt, eps=1e-10):
     tt_norm = frobenius_norm(tt)
     d = tt.d
@@ -143,3 +143,4 @@ def tt_round_modified(tt, eps=1e-10):
     #print [frobenius_norm(core) for core in B.cores]
 
     return B
+"""

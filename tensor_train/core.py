@@ -64,7 +64,7 @@ class TensorTrain(object):
             cls(black_box, decompose)
 
     @classmethod
-    def from_cores(cls, cores):
+    def from_cores(cls, cores, reuse=False):
         tt = TensorTrain()
         if len(cores) == 0:
             return tt
@@ -72,7 +72,7 @@ class TensorTrain(object):
         tt.n = tuple([core.shape[1] for core in cores])
         tt.r = np.array([1] + [core.shape[2] for core in cores])
         tt.d = len(cores)
-        tt.cores = [core.copy() for core in cores]
+        tt.cores = [core for core in cores] if reuse else [core.copy() for core in cores]
         return tt
 
     def __getitem__(self, item):

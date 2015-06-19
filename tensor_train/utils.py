@@ -29,6 +29,7 @@ def frobenius_norm(a):
     else:
         raise Exception('Wrong type of argument - must be ndarray of TensorTrain!')
 
+
 def rank_chop(s, delta):
     """
     Clip vector s = [\sigma_{1}, \ldots, \sigma{r}] of real values sorted in descending order
