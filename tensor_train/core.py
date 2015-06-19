@@ -75,6 +75,16 @@ class TensorTrain(object):
         tt.cores = [core.copy() for core in cores]
         return tt
 
+    def __getitem__(self, item):
+        it = np.asarray(item)
+        if len(it.shape) == 1:
+            subcores = [self.cores[i][:, ii, :] for i, ii in enumerate(it)]
+            v = subcores[0]
+            for i in xrange(1, self.d):
+                v = np.dot(v, subcores[i])
+            # b must be [1, 1] matrix
+            return v[0, 0]
+
 
     def tt_svd(self, A, eps=1e-9):
         from tt_svd import tt_svd
@@ -138,6 +148,10 @@ class TensorTrain(object):
     def tt_scalar_product(self, other):
         from tt_basic_algebra import tt_scalar_product
         return tt_scalar_product(self, other)
+
+    def tt_outer_product(self, other):
+        from tt_basic_algebra import tt_outer_product
+        return tt_outer_product(self, other)
 
     def tt_frobenius_norm(self):
         val = self.tt_scalar_product(self)

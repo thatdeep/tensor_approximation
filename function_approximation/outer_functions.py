@@ -34,7 +34,7 @@ class CubeDispatcher(object):
             qs_mask = q_estimate_from_many(numbers_of_intervals)
             #print qs
             qs = np.array(range(2 * self.N + 1))[qs_mask]
-            return [([int(mp.floor(el + eps * q * self.gamma**self.k)) for el in x_big], q) for q in qs], qs_mask
+            return [([mp.floor(el + eps * q * self.gamma**self.k) for el in x_big], q) for q in qs], qs_mask
 
     def forbidden_index_search(self, x, q):
         with workdps(self.dps):
@@ -64,21 +64,21 @@ class CubeDispatcher(object):
 
 
 class SemiOuter(object):
-    def __init__(self, f, k, N=2, dps=2048):
+    def __init__(self, f, k, N=2, dps=2048*4):
         with workdps(dps):
             self.f = f
             self.k = k
             self.dps = dps
             self.N = N
             self.gamma = mpf(gamma_estimate(N))
-            if math.log(10, self.gamma) * k > dps:
-                self.dps = math.log(10, self.gamma) * k * 3
+            #if math.log(10, self.gamma) * k > dps:
+            #    self.dps = math.log(10, self.gamma) * k * 3
             self.cube_dispatcher = CubeDispatcher(k, N, self.dps)
             self.mul_const = self.gamma**(-self.k)
             self.eps = mpf('1.0') / (self.gamma - 1)
             real_dps = math.log(self.gamma, 10)*k
-            if 4*real_dps > dps:
-                self.dps = max(4*real_dps, dps)
+            #if 4*real_dps > dps:
+            #    self.dps = max(4*real_dps, dps)
             eps_mul_const = self.eps * self.mul_const
             #self.all_eps_adders = [eps_mul_const - q * self.eps for q in xrange(2 * N + 1)]
 
@@ -112,7 +112,6 @@ class SemiOuter(object):
 
     def exact_on_cube(self, index, q):
         with workdps(self.dps):
-            indices = [int(i) for i in index]
             eps = mpf('1.0') / (self.gamma - 1)
             #mul_const = self.gamma**(-self.k)
             point = [(index[s] + eps) * self.mul_const - q * eps for s in xrange(self.N)]

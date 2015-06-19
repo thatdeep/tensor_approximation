@@ -16,11 +16,11 @@ class IndexRC(object):
 
         if initial_index == None:
             self.index = [0]*(self.d - 1)
-            nd = np.array(self.n)
-            steps = np.array(nd[:-1], dtype=int)
-            steps[nd[1:] < steps] = nd[1:][nd[1:] < steps]
-            steps /= ranks[1:-1]
-            assert not np.sum(steps == 0)
+            #nd = np.array(self.n)
+            #steps = np.array(nd[:-1], dtype=int)
+            #steps[nd[1:] < steps] = nd[1:][nd[1:] < steps]
+            #steps /= ranks[1:-1]
+            #assert not np.sum(steps == 0)
 
             for k in xrange(self.d - 1):
                 self.index[k] = semi_random_multi_index(self.n[k + 1:], self.ranks[k + 1])
@@ -87,9 +87,9 @@ def semi_random_multi_index(shape, r):
     sizeall = reduce(lambda x, y: x*y, shape, 1)
     d = len(shape)
     if r > sizeall:
-        raise Exception("You can't create {r} uniq elements from {n} elements").format(r=r, n=sizeall)
+        raise Exception("You can't create {r} uniq elements from {n} elements".format(r=r, n=sizeall))
     if r > sizeall*9/10:
-        print "Warning! We have wery little probability for reach {r} uniqs".format(r=r)
+        print "Warning! We have very little probability for reach {r} uniqs".format(r=r)
     uniqs = set()
 
     # Just create some more random elements than r
@@ -103,7 +103,7 @@ def semi_random_multi_index(shape, r):
 
     # If we haven't find enough unique indices just take them with loop
     if len(uniqs) < r:
-        delta = len(uniqs) - r
+        delta = r - len(uniqs)
         print 'delta: {d}'.format(d=delta)
         while delta > 0:
             tupled = tuple([np.random.randint(0, dim_size) for dim_size in shape])

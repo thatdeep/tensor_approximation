@@ -28,10 +28,12 @@ print frobenius_norm(tr), frobenius_norm(tr.full_tensor())
 
 
 # Function approximation part
+
 """
 from tests import test_sinus
+from multivariate_test import test_sinus_write
 
-test_sinus()
+test_sinus_write(M=10)
 """
 
 
@@ -83,7 +85,37 @@ print frobenius_norm(skelet.full_tensor() - t.full_tensor())
 """
 from tensor_train import TensorTrain, frobenius_norm
 from tensor_train import BlackBox
+from tests.sinus_cores import sym_sum_sinus_tensor
 
+def f(x):
+    return np.sin(np.sum(x))
+
+def test_f(f, dims, bounds=None):
+    if bounds == None:
+        bounds = [0, 1]
+
+def test_f_sym(f, d, bounds=None, discr=10, eps=1e-9):
+    if bounds == None:
+        bounds = [0, 1]
+    n = tuple([discr]*d)
+    space = np.linspace(bounds[0], bounds[1], discr, endpoint=False)
+    black_box = BlackBox(lambda i: f([space[ii] for ii in i]), n, d, dtype=np.float, array_based=False)
+    return TensorTrain(black_box, eps=eps)
+
+d = 250
+discr  = 10
+eps = 1e-7
+t_exact = sym_sum_sinus_tensor(d, discretization=discr)
+t_approx = test_f_sym(f, d, discr=discr, eps=eps)
+print t_approx.r
+
+#t_approx = t_approx.tt_round()
+print frobenius_norm(t_exact)
+print frobenius_norm(t_approx)
+print frobenius_norm(t_exact - t_approx), eps*frobenius_norm(t_exact)
+"""
+
+"""
 def f(x):
     return np.sum(x)**5
 
@@ -102,15 +134,63 @@ t = TensorTrain(black_box)
 
 F = np.fromiter((f([spaces[idx][ii] for idx, ii in enumerate(i)]) for i in np.ndindex(*dims)), dtype=np.float).reshape(dims)
 print F.shape
-tr = t.tt_round(eps=1e-8)
+tr = t.tt_round(eps=1e-9)
 print tr.r
 TF = tr.full_tensor()
 D = TF - F
 print frobenius_norm(D)
 print np.max(np.abs(D))
-# Small test of indexRC class
 """
 
+# Small test of indexRC class
+
+from tensor_train import TensorTrain, frobenius_norm
+from tensor_train import BlackBox
+
+def f(x):
+    arg = np.sum(x)
+    if arg == 0: arg = 1
+    return np.sin(1.0 / arg)
+
+
+def test_f_sym(f, d, bounds=None, discr=10, eps=1e-9):
+    if bounds == None:
+        bounds = [0, 1]
+    n = tuple([discr]*d)
+    space = np.linspace(bounds[0], bounds[1], discr, endpoint=False)
+    black_box = BlackBox(lambda i: f([space[ii] for ii in i]), n, d, dtype=np.float, array_based=False)
+    return TensorTrain(black_box, eps=eps), black_box
+
+xxx = []
+
+for d in [10, 100, 250]:
+    dims = tuple([10]*d)
+    discr  = 10
+    eps = 1e-7
+
+    #t_exact = sym_sum_sinus_tensor(d, discretization=discr)
+    t_approx, f_exact = test_f_sym(f, d, discr=discr, eps=eps)
+    print t_approx.r
+
+    maxx = 0
+    space = np.linspace(0, 1, discr, endpoint=False)
+    sample_size = 10000
+    random_samples = np.vstack([np.random.randint(0, dims[i], sample_size) for i in xrange(len(dims))]).T
+    for sample in random_samples:
+        #f_sample = tuple([space[i] for i in sample])
+        xx =  np.abs(f_exact[tuple(sample)] - t_approx[sample])
+        if xx > maxx:
+            maxx = xx
+    xxx.append(xx)
+    print xx
+
+print xxx
+#t_approx = t_approx.tt_round()
+#print frobenius_norm(t_exact)
+#print frobenius_norm(t_approx)
+#print frobenius_norm(t_exact - t_approx), eps*frobenius_norm(t_exact)
+
+"""
 from tensor_train import TensorTrain, frobenius_norm
 from tensor_train import BlackBox
 
@@ -129,27 +209,35 @@ def f_box_generator(f, spaces):
 
 f_box = f_box_generator(f, spaces)
 
+eps = 1e-7
 black_box = BlackBox(f_box, dims, d, dtype=np.float, array_based=False)
-t = TensorTrain(black_box)
+t = TensorTrain(black_box, eps=eps)
 
 F = np.fromfile('../f.arr').reshape(dims)
 #F = np.fromiter((f([spaces[idx][ii] for idx, ii in enumerate(i)]) for i in np.ndindex(*dims)), dtype=np.float).reshape(dims)
 print F.shape
 print t.r
+print frobenius_norm(F)
+print frobenius_norm(t)
 T = t.full_tensor()
 D = T - F
 print frobenius_norm(D)
+print eps * frobenius_norm(F)
 print np.max(np.abs(D))
 
 print '-'*80
 
-tr = t.tt_round(eps=1e-6)
+tr = t.tt_round(eps=eps)
 print tr.r
 TF = tr.full_tensor()
 D = TF - F
 print frobenius_norm(D)
 print np.max(np.abs(D))
 
+idx = [0]*6
+print F[idx]
+print t[idx]
+"""
 
 """
 from tensor_train import IndexRC

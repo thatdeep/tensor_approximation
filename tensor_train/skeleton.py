@@ -67,18 +67,25 @@ def recalculate_ranks(ranks, rounded_ranks, unstable_ranks, maxranks):
     unstable_ranks[stabilization_indices] = False
     ranks[unstable_ranks] += 1
 
-def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
+def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=20):
     n = A.shape
     d = len(n)
     # if ranks is not specified, define them as (2, 2, ..., 2)
-    maxranks = np.asarray(n)[1:]
-    maxranks[np.asarray(n[:-1]) < maxranks] = np.asarray(n[:-1])[np.asarray(n[:-1]) < maxranks]
-    maxranks = np.array([1] + list(maxranks) + [1])
+    #maxranks = np.asarray(n)[1:]
+    #maxranks[np.asarray(n[:-1]) < maxranks] = np.asarray(n[:-1])[np.asarray(n[:-1]) < maxranks]
+    #maxranks = np.array([1] + list(maxranks) + [1])
     if ranks == None:
         ranks = np.ones(d + 1, dtype=int) * 2
         ranks[0] = ranks[-1] = 1
     ranks_unstable = np.ones_like(ranks, dtype=np.bool)
     ranks_unstable[0] = ranks_unstable[-1] = False
+    prod = lambda iterable: reduce(lambda x, y: x * y, iterable, 1)
+
+    maxranks = [1] + [prod(n[i:]) for i in xrange(1, len(n))] + [1]
+    maxranks_rev = [1] + [prod(n[:i]) for i in xrange(1, len(n))] + [1]
+    maxranks = np.min([maxranks, maxranks_rev], axis=0)
+    #maxranks = np.ones_like(ranks)
+    #maxranks[1:-1] = max(n)*2
 
     while True:
         irc = IndexRC(n, ranks[:])
@@ -94,14 +101,15 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
 
             # TODO Did we really need tt_round here?
             difference = frobenius_norm(next_approx - prev_approx)
-            print "difference: {d}, eps: {eps}".format(d=difference, eps=eps)
-            if difference < eps:
+            fn = frobenius_norm(prev_approx)
+            print "difference: {d}, eps*fn: {eps}".format(d=difference, eps=eps*fn)
+            if difference < eps * fn:
                 print "Reach close approximation on {i} iteration with ranks {r}".format(i=i+1, r=ranks)
                 break
             prev_approx = next_approx
 
         # now we have approximation to tensor A with fixed ranks
-        rounded_approx = next_approx.tt_round()
+        rounded_approx = next_approx.tt_round(eps)
         rounded_ranks = rounded_approx.r
         print "ranks    : {r}\nnew ranks: {nr}".format(r=ranks, nr=rounded_ranks)
         recalculate_ranks(ranks, rounded_ranks, ranks_unstable, maxranks)

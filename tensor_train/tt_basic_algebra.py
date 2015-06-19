@@ -127,6 +127,11 @@ def tt_scalar_product(tt ,other):
     return abs(v[0])
 
 
+def tt_outer_product(tt, other):
+    outer_cores = [core.copy() for core in tt.cores] + [core.copy() for core in other.cores]
+    TensorTrain.from_cores(outer_cores)
+
+
 def tt_scalar_product_old(tt, other):
     A = tt * other
     return A.tt_convolve([np.ones(dimension) for dimension in A.n])
