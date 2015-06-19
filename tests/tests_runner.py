@@ -166,7 +166,7 @@ xxx = []
 for d in [10, 100, 250]:
     dims = tuple([10]*d)
     discr  = 10
-    eps = 1e-7
+    eps = 1e-5
 
     #t_exact = sym_sum_sinus_tensor(d, discretization=discr)
     t_approx, f_exact = test_f_sym(f, d, discr=discr, eps=eps)

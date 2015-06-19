@@ -67,7 +67,7 @@ def recalculate_ranks(ranks, rounded_ranks, unstable_ranks, maxranks):
     unstable_ranks[stabilization_indices] = False
     ranks[unstable_ranks] += 1
 
-def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=20):
+def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
     n = A.shape
     d = len(n)
     # if ranks is not specified, define them as (2, 2, ..., 2)
@@ -87,6 +87,7 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=20):
     #maxranks = np.ones_like(ranks)
     #maxranks[1:-1] = max(n)*2
 
+    blast_counter = 0
     while True:
         irc = IndexRC(n, ranks[:])
 
@@ -117,3 +118,11 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=20):
             # All ranks are stablilize
             print "Stabilize!"
             return rounded_approx.cores if cores_only else rounded_approx
+        #else:
+        #    blast_counter += 1
+        #    if blast_counter > 10:
+        #        blast_counter = 0
+        #        ranks_unstable[1:-1] = True
+        #        ranks[1:-1] *= 3
+        #        ranks[1:-1] /= 2
+        #        ranks = np.clip(ranks, 0, maxranks)
