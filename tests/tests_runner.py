@@ -82,7 +82,7 @@ print np.max(np.abs(xx))
 print frobenius_norm(skelet.full_tensor() - t.full_tensor())
 """
 
-"""
+
 from tensor_train import TensorTrain, frobenius_norm
 from tensor_train import BlackBox
 from tests.sinus_cores import sym_sum_sinus_tensor
@@ -90,30 +90,34 @@ from tests.sinus_cores import sym_sum_sinus_tensor
 def f(x):
     return np.sin(np.sum(x))
 
+def f_vect(x):
+    arg = np.sum(x, axis=0)
+    return np.sin(arg)
+
 def test_f(f, dims, bounds=None):
     if bounds == None:
         bounds = [0, 1]
 
-def test_f_sym(f, d, bounds=None, discr=10, eps=1e-9):
-    if bounds == None:
+def test_f_sym(f, f_vect, d, bounds=None, discr=10, eps=1e-9):
+    if bounds is None:
         bounds = [0, 1]
-    n = tuple([discr]*d)
+    #n = tuple([discr]*d)
     space = np.linspace(bounds[0], bounds[1], discr, endpoint=False)
-    black_box = BlackBox(lambda i: f([space[ii] for ii in i]), n, d, dtype=np.float, array_based=False)
+    black_box = BlackBox(f, f_vect, bounds, discr, d, dtype=np.float, array_based=False)
     return TensorTrain(black_box, eps=eps)
 
-d = 250
+d = 50
 discr  = 10
 eps = 1e-7
 t_exact = sym_sum_sinus_tensor(d, discretization=discr)
-t_approx = test_f_sym(f, d, discr=discr, eps=eps)
+t_approx = test_f_sym(f, f_vect, d, discr=discr, eps=eps)
 print t_approx.r
 
 #t_approx = t_approx.tt_round()
 print frobenius_norm(t_exact)
 print frobenius_norm(t_approx)
 print frobenius_norm(t_exact - t_approx), eps*frobenius_norm(t_exact)
-"""
+
 
 """
 def f(x):
@@ -143,7 +147,7 @@ print np.max(np.abs(D))
 """
 
 # Small test of indexRC class
-
+"""
 from tensor_train import TensorTrain, frobenius_norm
 from tensor_train import BlackBox
 
@@ -169,13 +173,13 @@ xxx = []
 
 import cProfile
 
-for d in [10, 100, 250][1:-1]:
+for d in [10, 20, 50]:
     dims = tuple([10]*d)
     discr  = 10
     eps = 1e-5
 
     #t_exact = sym_sum_sinus_tensor(d, discretization=discr)
-    cProfile.run('t_approx, f_exact = test_f_sym(f, f_vect, d, discr=discr, eps=eps)')
+    #cProfile.run('t_approx, f_exact = test_f_sym(f, f_vect, d, discr=discr, eps=eps)')
     t_approx, f_exact = test_f_sym(f, f_vect, d, discr=discr, eps=eps)
     print t_approx.r
 
@@ -185,13 +189,14 @@ for d in [10, 100, 250][1:-1]:
     random_samples = np.vstack([np.random.randint(0, dims[i], sample_size) for i in xrange(len(dims))]).T
     for sample in random_samples:
         #f_sample = tuple([space[i] for i in sample])
-        xx =  np.abs(f_exact[tuple(sample)] - t_approx[sample])
+        xx =  np.abs(f_exact[sample] - t_approx[sample])
         if xx > maxx:
             maxx = xx
     xxx.append(xx)
     print xx
 
 print xxx
+"""
 #t_approx = t_approx.tt_round()
 #print frobenius_norm(t_exact)
 #print frobenius_norm(t_approx)
