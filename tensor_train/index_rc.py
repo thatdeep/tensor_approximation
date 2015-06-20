@@ -136,15 +136,24 @@ def full_index(row_part, column_part, mid_size):
     mid = mid_size
     n, dj = unpack_nd(column_part)
 
-
-    I = np.repeat(row_part, mid * n) if row_part.shape else ()
-    M = np.tile(np.repeat(np.arange(mid), n), m)
-    J = np.tile(column_part, m * mid) if column_part.shape else ()
-
+    sum_dim = di + 1 + dj
+    cur_idx = 0
+    big_screen_index = np.zeros((sum_dim, m * mid * n), dtype=int)
     if di != 0:
-        I = reshape(I, (di, -1))
+        big_screen_index[0:di] = np.repeat(row_part, mid * n).reshape((di, -1))
+    big_screen_index[di: di + 1] = np.tile(np.repeat(np.arange(mid), n), m)
     if dj != 0:
-        J = reshape(J, (dj, -1))
+        big_screen_index[di + 1:] =  np.tile(column_part, m * mid).reshape((dj, -1))
+
+    #I = np.repeat(row_part, mid * n) if row_part.shape else ()
+    #M = np.tile(np.repeat(np.arange(mid), n), m)
+    #J = np.tile(column_part, m * mid) if column_part.shape else ()
+
+    #if di != 0:
+    #    I = reshape(I, (di, -1))
+    #if dj != 0:
+    #    J = reshape(J, (dj, -1))
 
     #print I, M, J
-    return tuple(chain(tuple(I), (M,), tuple(J)))
+    #return tuple(chain(tuple(I), (M,), tuple(J)))
+    return big_screen_index

@@ -117,7 +117,7 @@ def tt_scalar_product(tt ,other):
 
     first = tt.cores[0].reshape(tt.cores[0].shape[1:])
     second = other.cores[0].reshape(other.cores[0].shape[1:])
-    v =  np.sum([np.kron(first[i], second[i]) for i in xrange(tt.n[0])], axis=0)
+    v = np.sum([np.kron(first[i], second[i]) for i in xrange(tt.n[0])], axis=0)
     for k in xrange(1, tt.d):
         A = tt.cores[k]
         B = other.cores[k]
