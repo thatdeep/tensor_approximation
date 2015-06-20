@@ -28,10 +28,10 @@ def tt_mul_scalar(tt, scalar, rmul=False):
         if rmul:
             A.cores[-1] *= scalar
         else:
-            A.cores[0] *= scalar
+            A.cores[-1] *= scalar
     else:
         for k in xrange(A.cores):
-            A.cores[k] = np.zeros((A.n[k]))
+            A.cores[k] = np.zeros(A.n[k])[np.newaxis, :, np.newaxis]
             A.cores[k] = reshape(A.cores[k], (1, A.n[k], 1))
     return A
 

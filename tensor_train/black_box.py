@@ -25,7 +25,8 @@ class BlackBox(object):
 
     def __getitem__(self, item):
         if isinstance(item, np.ndarray) and len(item.shape) == 2:
-            return self.f_vect(item)
+            vals = self.space[item.ravel()].reshape(item.shape)
+            return self.f_vect(vals)
         it = self.pp(item)
         if it.shape == (self.d, ):
             return self.f(self.space[it])

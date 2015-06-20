@@ -94,10 +94,6 @@ def f_vect(x):
     arg = np.sum(x, axis=0)
     return np.sin(arg)
 
-def test_f(f, dims, bounds=None):
-    if bounds == None:
-        bounds = [0, 1]
-
 def test_f_sym(f, f_vect, d, bounds=None, discr=10, eps=1e-9):
     if bounds is None:
         bounds = [0, 1]
@@ -106,7 +102,7 @@ def test_f_sym(f, f_vect, d, bounds=None, discr=10, eps=1e-9):
     black_box = BlackBox(f, f_vect, bounds, discr, d, dtype=np.float, array_based=False)
     return TensorTrain(black_box, eps=eps)
 
-d = 50
+d = 305
 discr  = 10
 eps = 1e-7
 t_exact = sym_sum_sinus_tensor(d, discretization=discr)
