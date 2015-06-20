@@ -155,7 +155,7 @@ class TensorTrain(object):
 
     def tt_frobenius_norm(self):
         val = self.tt_scalar_product(self)
-        return math.sqrt(val)
+        return np.sqrt(val)
 
     def printable_basic_info(self):
         return 'core elements | core shapes | suppression ranks:\n' +\

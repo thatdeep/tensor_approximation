@@ -82,7 +82,7 @@ print np.max(np.abs(xx))
 print frobenius_norm(skelet.full_tensor() - t.full_tensor())
 """
 
-
+"""
 from tensor_train import TensorTrain, frobenius_norm
 from tensor_train import BlackBox
 from tests.sinus_cores import sym_sum_sinus_tensor
@@ -113,7 +113,7 @@ print t_approx.r
 print frobenius_norm(t_exact)
 print frobenius_norm(t_approx)
 print frobenius_norm(t_exact - t_approx), eps*frobenius_norm(t_exact)
-
+"""
 
 """
 def f(x):
@@ -143,7 +143,7 @@ print np.max(np.abs(D))
 """
 
 # Small test of indexRC class
-"""
+
 from tensor_train import TensorTrain, frobenius_norm
 from tensor_train import BlackBox
 
@@ -160,39 +160,43 @@ def f_vect(x):
 
 def test_f_sym(f, f_vect, d, bounds=None, discr=10, eps=1e-9):
     if bounds == None:
-        bounds = [0, 1]
+        bounds = [-1, 0]
     space = np.linspace(bounds[0], bounds[1], discr, endpoint=False)
     black_box = BlackBox(f, f_vect, bounds, discr, d, dtype=np.float, array_based=False)
     return TensorTrain(black_box, eps=eps), black_box
 
 xxx = []
+norms = []
 
 import cProfile
 
-for d in [10, 20, 50]:
-    dims = tuple([10]*d)
+for d in [10, 100, 2000][-1:]:
     discr  = 10
-    eps = 1e-5
+    dims = tuple([discr]*d)
+    eps = 1e-9
 
     #t_exact = sym_sum_sinus_tensor(d, discretization=discr)
-    #cProfile.run('t_approx, f_exact = test_f_sym(f, f_vect, d, discr=discr, eps=eps)')
+    cProfile.run('t_approx, f_exact = test_f_sym(f, f_vect, d, discr=discr, eps=eps)')
     t_approx, f_exact = test_f_sym(f, f_vect, d, discr=discr, eps=eps)
     print t_approx.r
 
     maxx = 0
-    space = np.linspace(0, 1, discr, endpoint=False)
+    space = np.linspace(-1, 0, discr, endpoint=False)
     sample_size = 10000
     random_samples = np.vstack([np.random.randint(0, dims[i], sample_size) for i in xrange(len(dims))]).T
     for sample in random_samples:
         #f_sample = tuple([space[i] for i in sample])
-        xx =  np.abs(f_exact[sample] - t_approx[sample])
+        fe = f_exact[sample]
+        xx =  np.abs((fe - t_approx[sample]) / fe)
         if xx > maxx:
             maxx = xx
     xxx.append(xx)
+    norms.append(frobenius_norm(t_approx))
     print xx
 
 print xxx
-"""
+print norms
+
 #t_approx = t_approx.tt_round()
 #print frobenius_norm(t_exact)
 #print frobenius_norm(t_approx)

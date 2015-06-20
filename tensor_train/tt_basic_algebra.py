@@ -115,16 +115,16 @@ def tt_scalar_product(tt ,other):
     if tt.n != other.n:
         raise Exception('dimensions of tensors must be equal')
 
-    first = tt.cores[0].reshape(tt.cores[0].shape[1:])
-    second = other.cores[0].reshape(other.cores[0].shape[1:])
+    first = np.array(tt.cores[0], dtype=np.float128).reshape(tt.cores[0].shape[1:])
+    second = np.array(other.cores[0], dtype=np.float128).reshape(other.cores[0].shape[1:])
     v = np.sum([np.kron(first[i], second[i]) for i in xrange(tt.n[0])], axis=0)
     for k in xrange(1, tt.d):
-        A = tt.cores[k]
-        B = other.cores[k]
+        A = np.array(tt.cores[k], dtype=np.float128)
+        B = np.array(other.cores[k], dtype=np.float128)
         subvectors = [np.dot(v, np.kron(A[:, i, :], B[:, i, :])) for i in xrange(tt.n[k])]
         v = np.sum(subvectors, axis=0)
     # I don't know now how to avoid unstability of scalar product on tensors that are close to zero
-    return abs(v[0])
+    return np.abs(v[0])
 
 
 def tt_outer_product(tt, other):

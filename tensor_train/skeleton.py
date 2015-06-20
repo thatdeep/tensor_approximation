@@ -105,6 +105,7 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
             difference = frobenius_norm(next_approx - prev_approx)
             fn = frobenius_norm(prev_approx)
             print "difference: {d}, eps*fn: {eps}".format(d=difference, eps=eps*fn)
+            print difference, eps*fn
             if difference < eps * fn and i >= min_iter:
                 print "Reach close approximation on {i} iteration with ranks {r}".format(i=i+1, r=ranks)
                 break
