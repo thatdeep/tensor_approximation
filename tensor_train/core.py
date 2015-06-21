@@ -1,5 +1,7 @@
 import math
 import numpy as np
+import mpmath as mp
+from mpmath import workdps, mpf
 
 from numpy import tensordot
 from black_box import BlackBox
@@ -33,6 +35,8 @@ class TensorTrain(object):
             self.cores = []
             self.d = 0
             self.r = np.array([])
+            self.norm = 0
+            self._normed = True
         elif isinstance(black_box, TensorTrain):
             # Copy constructor
             self.dtype = black_box.dtype
@@ -40,6 +44,11 @@ class TensorTrain(object):
             self.shape = ()
             self.d = black_box.d
             self.r = black_box.r
+            if black_box.normed():
+                self.norm = black_box.norm
+                self._normed = True
+            else:
+                self._normed = False
             self.cores = [core.copy() for core in black_box.cores]
         elif isinstance(black_box, BlackBox):
             # Constructor from some "Black Box" tensor from which we can
@@ -49,8 +58,9 @@ class TensorTrain(object):
             self.shape = black_box.shape
             self.d = black_box.d
             if decompose == 'skeleton':
-                self.cores = skeleton(black_box, cores_only=True, eps=eps)
-                self.r = np.array([1] + [core.shape[2] for core in self.cores])
+                self.__init__(skeleton(black_box, cores_only=False, eps=eps), eps=eps)
+                #self.cores = skeleton(black_box, cores_only=True, eps=eps)
+                #self.r = np.array([1] + [core.shape[2] for core in self.cores])
             elif decompose == 'svd':
                 self.tt_svd(black_box, eps=eps)
 
@@ -64,8 +74,16 @@ class TensorTrain(object):
             cls(black_box, decompose)
 
     @classmethod
-    def from_cores(cls, cores, reuse=False):
+    def from_cores(cls, cores, reuse=False, norm=None):
+        dps=500
         tt = TensorTrain()
+        if norm is not None:
+            with workdps(dps):
+                norm = mpf(norm)
+                tt.norm = norm
+                tt._normed = True
+        else:
+            tt._normed = False
         if len(cores) == 0:
             return tt
         tt.dtype = cores[0].dtype
@@ -74,6 +92,9 @@ class TensorTrain(object):
         tt.d = len(cores)
         tt.cores = [core for core in cores] if reuse else [core.copy() for core in cores]
         return tt
+
+    def normed(self):
+        return self._normed
 
     def __getitem__(self, item):
         it = np.asarray(item)

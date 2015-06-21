@@ -1,6 +1,9 @@
 import numpy as np
+import mpmath as mp
 
-from tensor_train import TensorTrain
+from mpmath import workdps, mpf
+
+from tensor_train import TensorTrain, frobenius_norm
 
 """
 def sum_sinus_tensor(requested_shape, bounds=[0, 1], discretization=10):
@@ -34,6 +37,26 @@ def sym_sum_sinus_tensor(d, bounds=[0, 1], discretization=10):
     middle_core = np.reshape(middle_core, (2, 2, -1)).transpose((0, 2, 1))
 
     return TensorTrain.from_cores([first_core] + [middle_core.copy() for _ in xrange(d - 2)] + [last_core])
+
+def sym_sum_sinus_normed_tensor(d, bounds=[0, 1], discretization=10):
+    dps=500
+    space = np.linspace(bounds[0], bounds[1], discretization, endpoint=False)
+    mult = np.sqrt(discretization)
+    mult2 = np.sqrt(2*discretization)
+    sinx, cosx = np.sin(space), np.cos(space)
+
+    first_core = np.vstack([sinx, cosx]).T[np.newaxis, ...] / mult
+    last_core = np.vstack([cosx, sinx])[..., np.newaxis] / mult
+    middle_core = np.hstack([np.vstack([cosx, sinx]),
+                             np.vstack([-sinx, cosx])]) / (mult2)
+    middle_core = np.reshape(middle_core, (2, 2, -1)).transpose((0, 2, 1))
+
+    with workdps(dps):
+        norm = mpf(mult2)
+        norm = norm**(d-2)
+        norm *= mult**2
+
+    return TensorTrain.from_cores([first_core] + [middle_core.copy() for _ in xrange(d - 2)] + [last_core], norm)
 
 
 def verify_simple_sinus_tensor(d, discretization=10):

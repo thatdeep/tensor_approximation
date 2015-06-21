@@ -23,7 +23,10 @@ def frobenius_norm(a):
         if a is not ndarray or TensorTrain
     """
     if isinstance(a, TensorTrain):
-        return a.tt_frobenius_norm()
+        if a.normed():
+            return a.norm
+        else:
+            return a.tt_frobenius_norm()
     if isinstance(a, np.ndarray):
         return np.linalg.norm(a)
     else:

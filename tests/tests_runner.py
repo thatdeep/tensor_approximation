@@ -82,10 +82,10 @@ print np.max(np.abs(xx))
 print frobenius_norm(skelet.full_tensor() - t.full_tensor())
 """
 
-"""
+
 from tensor_train import TensorTrain, frobenius_norm
 from tensor_train import BlackBox
-from tests.sinus_cores import sym_sum_sinus_tensor
+from tests.sinus_cores import sym_sum_sinus_tensor, sym_sum_sinus_normed_tensor
 
 def f(x):
     return np.sin(np.sum(x))
@@ -102,10 +102,10 @@ def test_f_sym(f, f_vect, d, bounds=None, discr=10, eps=1e-9):
     black_box = BlackBox(f, f_vect, bounds, discr, d, dtype=np.float, array_based=False)
     return TensorTrain(black_box, eps=eps)
 
-d = 305
+d = 10
 discr  = 10
 eps = 1e-7
-t_exact = sym_sum_sinus_tensor(d, discretization=discr)
+t_exact = sym_sum_sinus_tensor(d, discretization=discr).tt_round(eps=0)
 t_approx = test_f_sym(f, f_vect, d, discr=discr, eps=eps)
 print t_approx.r
 
@@ -113,7 +113,7 @@ print t_approx.r
 print frobenius_norm(t_exact)
 print frobenius_norm(t_approx)
 print frobenius_norm(t_exact - t_approx), eps*frobenius_norm(t_exact)
-"""
+
 
 """
 def f(x):
@@ -144,6 +144,7 @@ print np.max(np.abs(D))
 
 # Small test of indexRC class
 
+"""
 from tensor_train import TensorTrain, frobenius_norm
 from tensor_train import BlackBox
 
@@ -196,6 +197,7 @@ for d in [10, 100, 2000][-1:]:
 
 print xxx
 print norms
+"""
 
 #t_approx = t_approx.tt_round()
 #print frobenius_norm(t_exact)

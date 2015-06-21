@@ -119,7 +119,7 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
         if not np.any(ranks_unstable):
             # All ranks are stablilize
             print "Stabilize!"
-            return rounded_approx.cores if cores_only else rounded_approx
+            return (rounded_approx.cores, rounded_approx.norm) if cores_only else rounded_approx
         #else:
         #    blast_counter += 1
         #    if blast_counter > 10:
