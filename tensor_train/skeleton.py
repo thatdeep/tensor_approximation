@@ -108,9 +108,16 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
             print difference, eps*fn
             if difference < eps * fn and i >= min_iter:
                 print "Reach close approximation on {i} iteration with ranks {r}".format(i=i+1, r=ranks)
+                unstable=False
                 break
             prev_approx = next_approx
-
+            if i == max_iter - 1:
+                # We haven't good approximation
+                ranks[ranks_unstable] += 1
+                print "Unstable approximation. Recalculate ranks: {r}".format(r=ranks)
+                unstable=True
+        if unstable:
+            continue
         # now we have approximation to tensor A with fixed ranks
         rounded_approx = next_approx.tt_round(eps)
         rounded_ranks = rounded_approx.r

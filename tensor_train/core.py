@@ -35,8 +35,6 @@ class TensorTrain(object):
             self.cores = []
             self.d = 0
             self.r = np.array([])
-            self.norm = 0
-            self._normed = True
         elif isinstance(black_box, TensorTrain):
             # Copy constructor
             self.dtype = black_box.dtype
@@ -44,11 +42,6 @@ class TensorTrain(object):
             self.shape = ()
             self.d = black_box.d
             self.r = black_box.r
-            if black_box.normed():
-                self.norm = black_box.norm
-                self._normed = True
-            else:
-                self._normed = False
             self.cores = [core.copy() for core in black_box.cores]
         elif isinstance(black_box, BlackBox):
             # Constructor from some "Black Box" tensor from which we can
@@ -74,16 +67,9 @@ class TensorTrain(object):
             cls(black_box, decompose)
 
     @classmethod
-    def from_cores(cls, cores, reuse=False, norm=None):
+    def from_cores(cls, cores, reuse=False):
         dps=500
         tt = TensorTrain()
-        if norm is not None:
-            with workdps(dps):
-                norm = mpf(norm)
-                tt.norm = norm
-                tt._normed = True
-        else:
-            tt._normed = False
         if len(cores) == 0:
             return tt
         tt.dtype = cores[0].dtype
@@ -92,9 +78,6 @@ class TensorTrain(object):
         tt.d = len(cores)
         tt.cores = [core for core in cores] if reuse else [core.copy() for core in cores]
         return tt
-
-    def normed(self):
-        return self._normed
 
     def __getitem__(self, item):
         it = np.asarray(item)

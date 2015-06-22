@@ -63,9 +63,17 @@ print d
 """
 from tests import verify_simple_sinus_tensor
 
-print [verify_simple_sinus_tensor(d, 10) for d in xrange(2, 5)]
+print [verify_simple_sinus_tensor(d, discretization=10) for d in xrange(2, 5)]
 """
 
+
+"""
+from tests import verify_simple_poly_tensor
+
+coeffs = np.array([0, 0, 1])
+
+print [verify_simple_poly_tensor(d, coeffs, discretization=10) for d in xrange(2, 6)]
+"""
 
 # Testing skeleton decomposition
 """
@@ -85,14 +93,23 @@ print frobenius_norm(skelet.full_tensor() - t.full_tensor())
 
 from tensor_train import TensorTrain, frobenius_norm
 from tensor_train import BlackBox
-from tests.sinus_cores import sym_sum_sinus_tensor, sym_sum_sinus_normed_tensor
+from tests.polynom_cores import sym_sum_poly
 
-def f(x):
-    return np.sin(np.sum(x))
+def f_gen(coeffs):
+    p = coeffs.size - 1
+    def f(x):
+        arg = np.sum(x)
+        return np.sum(coeffs * arg**(np.arange(p+1)))
+    return f
 
-def f_vect(x):
-    arg = np.sum(x, axis=0)
-    return np.sin(arg)
+def f_vect_gen(coeffs):
+    p = coeffs.size - 1
+    def f(x):
+        # arg will have size of m
+        arg = np.sum(x, axis=0)
+        val_space = np.vstack([coeffs[i]*arg**i for i in xrange(p+1)])
+        return np.sum(val_space, axis=0)
+    return f
 
 def test_f_sym(f, f_vect, d, bounds=None, discr=10, eps=1e-9):
     if bounds is None:
@@ -102,17 +119,23 @@ def test_f_sym(f, f_vect, d, bounds=None, discr=10, eps=1e-9):
     black_box = BlackBox(f, f_vect, bounds, discr, d, dtype=np.float, array_based=False)
     return TensorTrain(black_box, eps=eps)
 
-d = 10
-discr  = 10
+d = 100
+discr  = 20
+p = 10
+coeffs = np.ones(p+1, dtype=int)
+#coeffs[-1] = 1
 eps = 1e-7
-t_exact = sym_sum_sinus_tensor(d, discretization=discr).tt_round(eps=0)
-t_approx = test_f_sym(f, f_vect, d, discr=discr, eps=eps)
+t_exact = sym_sum_poly(d, coeffs, bounds=[0, 10], discretization=discr)
+t_approx = test_f_sym(f_gen(coeffs), f_vect_gen(coeffs), d, bounds=[0, 10], discr=discr, eps=eps)
 print t_approx.r
 
 #t_approx = t_approx.tt_round()
 print frobenius_norm(t_exact)
 print frobenius_norm(t_approx)
 print frobenius_norm(t_exact - t_approx), eps*frobenius_norm(t_exact)
+
+ttt = t_exact.tt_round(eps=eps)
+print frobenius_norm(t_exact - ttt), eps*frobenius_norm(t_exact)
 
 
 """
