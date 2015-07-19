@@ -23,7 +23,7 @@ class IndexRC(object):
             #assert not np.sum(steps == 0)
 
             for k in xrange(self.d - 1):
-                self.index[k] = semi_random_multi_index(self.n[k + 1:], self.ranks[k + 1])
+                self.index[k] = semi_random_multi_index(self.n[k + 1:], self.ranks[k+1])
             #self.update_index(np.arange(0, ranks[self.d - 1]*steps[0], step=steps[0], dtype=int), k=self.d - 1, direction='rl')
             #for k in xrange(self.d - 2, 0, -1):
             #    self.update_index(np.arange(0, ranks[k]*steps[k], step=steps[k], dtype=int), k, direction='rl')
@@ -86,7 +86,14 @@ class IndexRC(object):
 def semi_random_multi_index(shape, r):
     sizeall = reduce(lambda x, y: x*y, shape, 1)
     d = len(shape)
+    if r == sizeall:
+        print "full ranks ranks[{r}]".format(r=r)
+        return np.vstack(np.unravel_index(np.arange(sizeall, dtype=int), shape))
     if r > sizeall:
+        assert False
+        self.ranks[k+1] = sizeall
+        print "We cut off ranks[{k}] from {r} to {r1}".format(k=k+1, r=r, r1=sizeall)
+        return np.vstack(np.unravel_index(np.arange(sizeall, dtype=int), shape))
         raise Exception("You can't create {r} uniq elements from {n} elements".format(r=r, n=sizeall))
     if r > sizeall*9/10:
         print "Warning! We have very little probability for reach {r} uniqs".format(r=r)

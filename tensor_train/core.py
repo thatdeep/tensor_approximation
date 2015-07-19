@@ -58,13 +58,13 @@ class TensorTrain(object):
                 self.tt_svd(black_box, eps=eps)
 
     @classmethod
-    def from_array(cls, data, decompose='skeleton'):
+    def from_array(cls, data, eps=1e-7, decompose='skeleton'):
         accepted_types = ['svd', 'skeleton']
         if decompose not in accepted_types:
             raise Exception('decompose must be one of the following: {types}'.format(types=accepted_types))
         if isinstance(data, np.ndarray):
             black_box = BlackBox.from_array(data)
-            cls(black_box, decompose)
+            cls(black_box, decompose, eps)
 
     @classmethod
     def from_cores(cls, cores, reuse=False):

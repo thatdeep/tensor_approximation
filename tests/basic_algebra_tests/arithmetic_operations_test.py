@@ -44,8 +44,8 @@ def simple_arithmetic_test(d=4, n=5, operation='add', percent=0.95, variate_dims
     A = sparse_tensor(d, n, percent)
     B = sparse_tensor(d, n, percent)
 
-    t_a = TensorTrain(A, eps)
-    t_b = TensorTrain(B, eps)
+    t_a = TensorTrain.from_array(A, eps)
+    t_b = TensorTrain.from_array(B, eps)
 
     t_a_full = t_a.full_tensor()
     t_b_full = t_b.full_tensor()

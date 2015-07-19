@@ -1,6 +1,66 @@
 import math
 import numpy as np
 
+import mpmath as mp
+from mpmath import workdps, mpf
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
+import seaborn as sns
+from function_approximation import InnerFunctionMp as InnerFunction, InnerFunctionG
+
+
+
+func = InnerFunction(N=2)
+sns.set_style("ticks", {"xtick.major.size": 16, "ytick.major.size": 16})
+rc={'axes.labelsize': 20, 'font.size': 24, 'legend.fontsize': 24.0, 'axes.titlesize': 24}
+sns.set(rc=rc)
+
+with workdps(2048):
+    #point = mpf('0.59349056')
+    #eps = mpf('2.0')**(-10)
+    #X = mp.linspace(mpf('0.5934905'), mpf('0.5934907'), 2000, endpoint=False)
+    X = mp.linspace(0, 1, 5000, endpoint=False)
+    #cProfile.run("np.array([float(func.evaluate(x)) for x in X])")
+    Y = np.array([float(func(x)) for x in X])
+
+    #print func.list_of_betas(dps=40000)
+
+    sns.plt.plot(X, Y)
+    sns.plt.axes().set_ylabel(r'$\Psi(x)$')
+    sns.plt.axes().set_xlabel(r'$x$')
+    sns.plt.savefig('inner_2d.png', dps=300, transparent=True)
+    sns.plt.show()
+
+"""
+N = 2
+
+discr = 1000
+func = InnerFunctionG(N=2)
+
+x = np.linspace(0.0, 1.0, 50, endpoint=False)
+y = np.linspace(0.0, 1.0, 50, endpoint=False)
+
+X ,Y  = np.meshgrid(x, y)
+
+points = np.vstack([X.ravel(), Y.ravel()]).T
+
+values = np.apply_along_axis(lambda p: float(func(p, 2)), 1, points)
+
+V = values.reshape(X.shape)
+
+fig = plt.figure()
+
+#---- First subplot
+ax = fig.add_subplot(1, 1, 1, projection='3d')
+surf = ax.plot_surface(X, Y, V, rstride=1, cstride=1, cmap=cm.coolwarm,
+        linewidth=0, antialiased=False)
+ax.set_zlim3d(V.min(), V.max())
+ax.set_xlabel(r'$x_1$')
+ax.set_ylabel(r'$x_2$')
+plt.savefig('inner_func_g.png', dps=300, transparent=True)
+plt.show()
+"""
 
 # Run operation test
 """
@@ -90,7 +150,7 @@ print np.max(np.abs(xx))
 print frobenius_norm(skelet.full_tensor() - t.full_tensor())
 """
 
-
+"""
 from tensor_train import TensorTrain, frobenius_norm
 from tensor_train import BlackBox
 from tests.polynom_cores import sym_sum_poly
@@ -119,6 +179,57 @@ def test_f_sym(f, f_vect, d, bounds=None, discr=10, eps=1e-9):
     black_box = BlackBox(f, f_vect, bounds, discr, d, dtype=np.float, array_based=False)
     return TensorTrain(black_box, eps=eps)
 
+
+dd = range(10, 110, 10)
+pp = range(1, 9, 1)
+
+form = (len(pp), len(dd))
+
+norm_exact = np.zeros(form)
+norm_approx = np.zeros(form)
+deltas = np.zeros(form)
+eps_norm = np.zeros(form)
+
+discr = 20
+bounds=[-1, 1]
+eps=1e-5
+for i, p in enumerate(pp):
+    coeffs = np.ones(p+1, dtype=int)
+    #coeffs[1::] = -1
+    for j, d in enumerate(dd):
+        if i == 7 and j == 8:
+            continue
+        print "I:{i}, J:{j}".format(i=i, j=j)
+        t_exact = sym_sum_poly(d, coeffs, bounds=bounds, discretization=discr)
+        t_approx = test_f_sym(f_gen(coeffs), f_vect_gen(coeffs), d, bounds=bounds, discr=discr, eps=eps)
+        norm_exact[i, j] = frobenius_norm(t_exact)
+        norm_approx[i, j] = frobenius_norm(t_approx)
+        deltas[i, j] = frobenius_norm(t_exact - t_approx)
+        eps_norm[i, j] = eps*norm_exact[i, j]
+        print t_exact.r
+        print t_approx.r
+        print '-'*80
+
+norm_exact.tofile('./poly_tests_data/i_norm_exact_{n}'.format(n=discr))
+norm_approx.tofile('./poly_tests_data/i_norm_approx_{n}'.format(n=discr))
+deltas.tofile('./poly_tests_data/i_deltas_{n}'.format(n=discr))
+eps_norm.tofile('./poly_tests_data/i_eps_norm_{n}'.format(n=discr))
+
+p = pp[7]
+d = dd[8]
+coeffs = np.ones(p+1, dtype=int)
+t_exact = sym_sum_poly(d, coeffs, bounds=bounds, discretization=discr)
+t_approx = test_f_sym(f_gen(coeffs), f_vect_gen(coeffs), d, bounds=bounds, discr=discr, eps=eps)
+
+nexact = frobenius_norm(t_exact)
+print nexact
+print frobenius_norm(t_approx)
+print frobenius_norm(t_exact - t_approx)
+print eps*nexact
+"""
+
+
+"""
 d = 100
 discr  = 20
 p = 10
@@ -136,7 +247,7 @@ print frobenius_norm(t_exact - t_approx), eps*frobenius_norm(t_exact)
 
 ttt = t_exact.tt_round(eps=eps)
 print frobenius_norm(t_exact - ttt), eps*frobenius_norm(t_exact)
-
+"""
 
 """
 def f(x):

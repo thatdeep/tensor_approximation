@@ -65,10 +65,13 @@ def recalculate_ranks(ranks, rounded_ranks, unstable_ranks, maxranks):
     unstable_indices = np.where(unstable_ranks)
     stabilization_indices = np.where(np.logical_or(ranks > rounded_ranks, ranks >= maxranks))
     unstable_ranks[stabilization_indices] = False
-    ranks[unstable_ranks] += 1
+    ranks[unstable_ranks] *= 3
+    ranks[unstable_ranks] /= 2
 
-def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
-    min_iter=3
+def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=12):
+    stop_iter_max = 6
+    stop_iter=0
+    min_iter=2
     n = A.shape
     d = len(n)
     # if ranks is not specified, define them as (2, 2, ..., 2)
@@ -89,7 +92,9 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
     #maxranks[1:-1] = max(n)*2
 
     blast_counter = 0
+    controller = Controller(n)
     while True:
+        unstable=False
         irc = IndexRC(n, ranks[:])
 
         # perform first approximation
@@ -108,21 +113,38 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
             print difference, eps*fn
             if difference < eps * fn and i >= min_iter:
                 print "Reach close approximation on {i} iteration with ranks {r}".format(i=i+1, r=ranks)
-                unstable=False
+                #unstable=False
+                stop_iter += 1
                 break
             prev_approx = next_approx
             if i == max_iter - 1:
                 # We haven't good approximation
-                ranks[ranks_unstable] += 1
-                print "Unstable approximation. Recalculate ranks: {r}".format(r=ranks)
+                # birst all ranks
+                ranks[1:-1] = ranks.max() * 3
+                ranks[1:-1] /= 2
+                #ranks[ranks_unstable] += 1
+                controller.control(ranks)
+                #print "Unstable approximation. Recalculate ranks: {r}".format(r=ranks)
                 unstable=True
+                stop_iter += 1
+        if stop_iter >= stop_iter_max:
+            print "Sorry, cannot stabilize"
+            rounded_approx = next_approx.tt_round(eps)
+            rounded_ranks = rounded_approx.r
+            ranks_unstable[1:-1] = True
+            ranks = rounded_ranks
+            #print "ranks    : {r}\nnew ranks: {nr}".format(r=ranks, nr=rounded_ranks)
+            #recalculate_ranks(ranks, rounded_ranks, ranks_unstable, maxranks)
+            controller.control(ranks)
+            stop_iter = 0
         if unstable:
             continue
         # now we have approximation to tensor A with fixed ranks
         rounded_approx = next_approx.tt_round(eps)
         rounded_ranks = rounded_approx.r
-        print "ranks    : {r}\nnew ranks: {nr}".format(r=ranks, nr=rounded_ranks)
+        #print "ranks    : {r}\nnew ranks: {nr}".format(r=ranks, nr=rounded_ranks)
         recalculate_ranks(ranks, rounded_ranks, ranks_unstable, maxranks)
+        controller.control(ranks)
         if not np.any(ranks_unstable):
             # All ranks are stablilize
             print "Stabilize!"
@@ -135,3 +157,26 @@ def skeleton(A, ranks=None, cores_only=False, eps=1e-6, max_iter=10):
         #        ranks[1:-1] *= 3
         #        ranks[1:-1] /= 2
         #        ranks = np.clip(ranks, 0, maxranks)
+
+
+class Controller(object):
+    def __init__(self, n):
+        self.n = n
+        self.d = len(n)
+        self.max_rank=10000
+
+    def control(self, r):
+        prod = lambda iterable: reduce(lambda x, y: x * y, iterable, 1)
+
+        # from right to left - column indices
+        for k in xrange(self.d - 1, -1, -1):
+            p = prod(r[k+1:])
+            if p > self.max_rank:
+                break
+            r[k] = min(self.n[k]*p, r[k])
+        # from left to right - row indices
+        for k in xrange(1, self.d):
+            p = prod(r[:k])
+            if p > self.max_rank:
+                break
+            r[k] = min(self.n[k-1]*p, r[k])

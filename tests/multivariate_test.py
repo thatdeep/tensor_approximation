@@ -24,7 +24,7 @@ def test_sinus():
     values_raw = np.apply_along_axis(ethalon_function, 1, points_raw)
     V = values_raw.reshape(X.shape)
 
-     # Twice as wide as it is tall.
+     # Twice as wide as it is tall.`
     fig = plt.figure(figsize=plt.figaspect(1.0))
     #---- First subplot
     ax = fig.add_subplot(2, 2, 1, projection='3d')
